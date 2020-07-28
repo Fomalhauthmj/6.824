@@ -1,432 +1,413 @@
 *** Starting wc test.
-Jul 23 21:33:03.928 Make a Master 21027
-Jul 23 21:33:04.989 Make a Worker 21037
-Jul 23 21:33:04.989 Make a Worker 21036
-Jul 23 21:33:05.002 AllocateMapTask 0
-Jul 23 21:33:05.007 AllocateMapTask 1
-Jul 23 21:33:05.007 21037 start MapTask ../pg-being_ernest.txt
-Jul 23 21:33:05.008 21036 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:33:05.014 Make a Worker 21038
-Jul 23 21:33:05.024 AllocateMapTask 2
-Jul 23 21:33:05.025 21038 start MapTask ../pg-frankenstein.txt
-Jul 23 21:33:05.836 21037 will report MapTask finished ../pg-being_ernest.txt
-Jul 23 21:33:05.841 MapTaskSolved 0
-Jul 23 21:33:07.541 21038 will report MapTask finished ../pg-frankenstein.txt
-Jul 23 21:33:07.543 MapTaskSolved 2
-Jul 23 21:33:07.599 21036 will report MapTask finished ../pg-dorian_gray.txt
-Jul 23 21:33:07.602 MapTaskSolved 1
-Jul 23 21:33:07.849 AllocateMapTask 3
-Jul 23 21:33:07.850 21037 start MapTask ../pg-grimm.txt
-Jul 23 21:33:09.429 21037 will report MapTask finished ../pg-grimm.txt
-Jul 23 21:33:09.431 MapTaskSolved 3
-Jul 23 21:33:09.548 AllocateMapTask 4
-Jul 23 21:33:09.549 21038 start MapTask ../pg-huckleberry_finn.txt
-Jul 23 21:33:09.608 AllocateMapTask 5
-Jul 23 21:33:09.610 21036 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:33:10.241 21036 will report MapTask finished ../pg-metamorphosis.txt
-Jul 23 21:33:10.243 MapTaskSolved 5
-Jul 23 21:33:11.375 21038 will report MapTask finished ../pg-huckleberry_finn.txt
-Jul 23 21:33:11.378 MapTaskSolved 4
-Jul 23 21:33:11.436 AllocateMapTask 6
-Jul 23 21:33:11.437 21037 start MapTask ../pg-sherlock_holmes.txt
-Jul 23 21:33:12.246 AllocateMapTask 7
-Jul 23 21:33:12.247 21036 start MapTask ../pg-tom_sawyer.txt
-Jul 23 21:33:12.812 21037 will report MapTask finished ../pg-sherlock_holmes.txt
-Jul 23 21:33:12.814 MapTaskSolved 6
-Jul 23 21:33:13.320 21036 will report MapTask finished ../pg-tom_sawyer.txt
-Jul 23 21:33:13.322 MapTaskSolved 7
-Jul 23 21:33:13.381 AllocateReduceTask 0
-Jul 23 21:33:13.383 21038 start ReduceTask 0
-Jul 23 21:33:14.000 21038 will report ReduceTask finished 0
-Jul 23 21:33:14.002 ReduceTaskSolved 0
-Jul 23 21:33:14.817 AllocateReduceTask 1
-Jul 23 21:33:14.818 21037 start ReduceTask 1
-Jul 23 21:33:15.325 AllocateReduceTask 2
-Jul 23 21:33:15.326 21036 start ReduceTask 2
-Jul 23 21:33:15.450 21037 will report ReduceTask finished 1
-Jul 23 21:33:15.452 ReduceTaskSolved 1
-Jul 23 21:33:16.005 AllocateReduceTask 3
-Jul 23 21:33:16.007 21038 start ReduceTask 3
-Jul 23 21:33:16.824 21038 will report ReduceTask finished 3
-Jul 23 21:33:16.826 ReduceTaskSolved 3
-Jul 23 21:33:16.887 21036 will report ReduceTask finished 2
-Jul 23 21:33:16.889 ReduceTaskSolved 2
-Jul 23 21:33:17.455 AllocateReduceTask 4
-Jul 23 21:33:17.457 21037 start ReduceTask 4
-Jul 23 21:33:18.290 21037 will report ReduceTask finished 4
-Jul 23 21:33:18.292 ReduceTaskSolved 4
-Jul 23 21:33:18.829 AllocateReduceTask 5
-Jul 23 21:33:18.830 21038 start ReduceTask 5
-Jul 23 21:33:18.892 AllocateReduceTask 6
-Jul 23 21:33:18.893 21036 start ReduceTask 6
-Jul 23 21:33:19.524 21038 will report ReduceTask finished 5
-Jul 23 21:33:19.526 ReduceTaskSolved 5
-Jul 23 21:33:20.297 AllocateReduceTask 7
-Jul 23 21:33:20.298 21037 start ReduceTask 7
-Jul 23 21:33:20.459 21036 will report ReduceTask finished 6
-Jul 23 21:33:20.461 ReduceTaskSolved 6
-Jul 23 21:33:21.129 21037 will report ReduceTask finished 7
-Jul 23 21:33:21.131 ReduceTaskSolved 7
-Jul 23 21:33:21.530 AllocateReduceTask 8
-Jul 23 21:33:21.531 21038 start ReduceTask 8
-Jul 23 21:33:22.464 AllocateReduceTask 9
-Jul 23 21:33:22.465 21036 start ReduceTask 9
-Jul 23 21:33:22.664 21038 will report ReduceTask finished 8
-Jul 23 21:33:22.666 ReduceTaskSolved 8
-Jul 23 21:33:23.348 21036 will report ReduceTask finished 9
-Jul 23 21:33:23.350 ReduceTaskSolved 9
+Jul 24 14:29:17.158 Make a Master 4148
+Jul 24 14:29:18.188 Make a Worker 4168
+Jul 24 14:29:18.191 Make a Worker 4167
+Jul 24 14:29:18.188 Make a Worker 4166
+Jul 24 14:29:18.200 AllocateMapTask 0
+Jul 24 14:29:18.204 4166 start MapTask ../pg-being_ernest.txt
+Jul 24 14:29:18.205 AllocateMapTask 1
+Jul 24 14:29:18.212 AllocateMapTask 2
+Jul 24 14:29:18.219 4167 start MapTask ../pg-frankenstein.txt
+Jul 24 14:29:18.210 4168 start MapTask ../pg-dorian_gray.txt
+Jul 24 14:29:18.718 4166 will report MapTask finished ../pg-being_ernest.txt
+Jul 24 14:29:18.720 MapTaskSolved 0
+Jul 24 14:29:19.544 4167 will report MapTask finished ../pg-frankenstein.txt
+Jul 24 14:29:19.546 MapTaskSolved 2
+Jul 24 14:29:19.643 4168 will report MapTask finished ../pg-dorian_gray.txt
+Jul 24 14:29:19.646 MapTaskSolved 1
+Jul 24 14:29:20.725 AllocateMapTask 3
+Jul 24 14:29:20.727 4166 start MapTask ../pg-grimm.txt
+Jul 24 14:29:21.551 AllocateMapTask 4
+Jul 24 14:29:21.552 4167 start MapTask ../pg-huckleberry_finn.txt
+Jul 24 14:29:21.649 AllocateMapTask 5
+Jul 24 14:29:21.650 4168 start MapTask ../pg-metamorphosis.txt
+Jul 24 14:29:22.064 4166 will report MapTask finished ../pg-grimm.txt
+Jul 24 14:29:22.066 MapTaskSolved 3
+Jul 24 14:29:22.087 4168 will report MapTask finished ../pg-metamorphosis.txt
+Jul 24 14:29:22.089 MapTaskSolved 5
+Jul 24 14:29:23.189 4167 will report MapTask finished ../pg-huckleberry_finn.txt
+Jul 24 14:29:23.191 MapTaskSolved 4
+Jul 24 14:29:24.069 AllocateMapTask 6
+Jul 24 14:29:24.070 4166 start MapTask ../pg-sherlock_holmes.txt
+Jul 24 14:29:24.092 AllocateMapTask 7
+Jul 24 14:29:24.093 4168 start MapTask ../pg-tom_sawyer.txt
+Jul 24 14:29:25.350 4168 will report MapTask finished ../pg-tom_sawyer.txt
+Jul 24 14:29:25.352 MapTaskSolved 7
+Jul 24 14:29:25.685 4166 will report MapTask finished ../pg-sherlock_holmes.txt
+Jul 24 14:29:25.686 MapTaskSolved 6
+Jul 24 14:29:27.204 AllocateReduceTask 0
+Jul 24 14:29:27.205 4167 start ReduceTask 0
+Jul 24 14:29:27.355 AllocateReduceTask 1
+Jul 24 14:29:27.356 4168 start ReduceTask 1
+Jul 24 14:29:27.690 AllocateReduceTask 2
+Jul 24 14:29:27.691 4166 start ReduceTask 2
+Jul 24 14:29:27.984 4167 will report ReduceTask finished 0
+Jul 24 14:29:27.986 ReduceTaskSolved 0
+Jul 24 14:29:28.190 4168 will report ReduceTask finished 1
+Jul 24 14:29:28.192 ReduceTaskSolved 1
+Jul 24 14:29:29.524 4166 will report ReduceTask finished 2
+Jul 24 14:29:29.527 ReduceTaskSolved 2
+Jul 24 14:29:29.990 AllocateReduceTask 3
+Jul 24 14:29:29.992 4167 start ReduceTask 3
+Jul 24 14:29:30.195 AllocateReduceTask 4
+Jul 24 14:29:30.196 4168 start ReduceTask 4
+Jul 24 14:29:30.806 4167 will report ReduceTask finished 3
+Jul 24 14:29:30.811 ReduceTaskSolved 3
+Jul 24 14:29:31.344 4168 will report ReduceTask finished 4
+Jul 24 14:29:31.347 ReduceTaskSolved 4
+Jul 24 14:29:31.530 AllocateReduceTask 5
+Jul 24 14:29:31.531 4166 start ReduceTask 5
+Jul 24 14:29:32.281 4166 will report ReduceTask finished 5
+Jul 24 14:29:32.283 ReduceTaskSolved 5
+Jul 24 14:29:32.815 AllocateReduceTask 6
+Jul 24 14:29:32.816 4167 start ReduceTask 6
+Jul 24 14:29:33.350 AllocateReduceTask 7
+Jul 24 14:29:33.351 4168 start ReduceTask 7
+Jul 24 14:29:34.287 AllocateReduceTask 8
+Jul 24 14:29:34.288 4166 start ReduceTask 8
+Jul 24 14:29:34.920 4168 will report ReduceTask finished 7
+Jul 24 14:29:34.922 ReduceTaskSolved 7
+Jul 24 14:29:35.212 4167 will report ReduceTask finished 6
+Jul 24 14:29:35.214 ReduceTaskSolved 6
+Jul 24 14:29:35.973 4166 will report ReduceTask finished 8
+Jul 24 14:29:35.977 ReduceTaskSolved 8
+Jul 24 14:29:36.926 AllocateReduceTask 9
+Jul 24 14:29:36.927 4168 start ReduceTask 9
+Jul 24 14:29:37.876 4168 will report ReduceTask finished 9
+Jul 24 14:29:37.879 ReduceTaskSolved 9
 --- wc test: PASS
 *** Starting indexer test.
-Jul 23 21:33:28.609 Make a Master 21165
-Jul 23 21:33:29.648 Make a Worker 21182
-Jul 23 21:33:29.651 AllocateMapTask 0
-Jul 23 21:33:29.660 21182 start MapTask ../pg-being_ernest.txt
-Jul 23 21:33:29.666 Make a Worker 21181
-Jul 23 21:33:29.669 AllocateMapTask 1
-Jul 23 21:33:29.670 21181 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:33:29.795 21182 will report MapTask finished ../pg-being_ernest.txt
-Jul 23 21:33:29.798 MapTaskSolved 0
-Jul 23 21:33:29.923 21181 will report MapTask finished ../pg-dorian_gray.txt
-Jul 23 21:33:29.926 MapTaskSolved 1
-Jul 23 21:33:31.804 AllocateMapTask 2
-Jul 23 21:33:31.805 21182 start MapTask ../pg-frankenstein.txt
-Jul 23 21:33:31.929 AllocateMapTask 3
-Jul 23 21:33:31.930 21181 start MapTask ../pg-grimm.txt
-Jul 23 21:33:32.046 21182 will report MapTask finished ../pg-frankenstein.txt
-Jul 23 21:33:32.047 MapTaskSolved 2
-Jul 23 21:33:32.125 21181 will report MapTask finished ../pg-grimm.txt
-Jul 23 21:33:32.134 MapTaskSolved 3
-Jul 23 21:33:34.050 AllocateMapTask 4
-Jul 23 21:33:34.052 21182 start MapTask ../pg-huckleberry_finn.txt
-Jul 23 21:33:34.138 AllocateMapTask 5
-Jul 23 21:33:34.139 21181 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:33:34.238 21181 will report MapTask finished ../pg-metamorphosis.txt
-Jul 23 21:33:34.240 MapTaskSolved 5
-Jul 23 21:33:34.293 21182 will report MapTask finished ../pg-huckleberry_finn.txt
-Jul 23 21:33:34.296 MapTaskSolved 4
-Jul 23 21:33:36.243 AllocateMapTask 6
-Jul 23 21:33:36.245 21181 start MapTask ../pg-sherlock_holmes.txt
-Jul 23 21:33:36.299 AllocateMapTask 7
-Jul 23 21:33:36.301 21182 start MapTask ../pg-tom_sawyer.txt
-Jul 23 21:33:36.513 21181 will report MapTask finished ../pg-sherlock_holmes.txt
-Jul 23 21:33:36.515 MapTaskSolved 6
-Jul 23 21:33:36.545 21182 will report MapTask finished ../pg-tom_sawyer.txt
-Jul 23 21:33:36.548 MapTaskSolved 7
-Jul 23 21:33:38.519 AllocateReduceTask 0
-Jul 23 21:33:38.520 21181 start ReduceTask 0
-Jul 23 21:33:38.551 AllocateReduceTask 1
-Jul 23 21:33:38.553 21182 start ReduceTask 1
-Jul 23 21:33:38.681 21181 will report ReduceTask finished 0
-Jul 23 21:33:38.685 ReduceTaskSolved 0
-Jul 23 21:33:38.709 21182 will report ReduceTask finished 1
-Jul 23 21:33:38.710 ReduceTaskSolved 1
-Jul 23 21:33:40.688 AllocateReduceTask 2
-Jul 23 21:33:40.689 21181 start ReduceTask 2
-Jul 23 21:33:40.714 AllocateReduceTask 3
-Jul 23 21:33:40.715 21182 start ReduceTask 3
-Jul 23 21:33:40.848 21181 will report ReduceTask finished 2
-Jul 23 21:33:40.851 ReduceTaskSolved 2
-Jul 23 21:33:40.873 21182 will report ReduceTask finished 3
-Jul 23 21:33:40.874 ReduceTaskSolved 3
-Jul 23 21:33:42.854 AllocateReduceTask 4
-Jul 23 21:33:42.855 21181 start ReduceTask 4
-Jul 23 21:33:42.877 AllocateReduceTask 5
-Jul 23 21:33:42.878 21182 start ReduceTask 5
-Jul 23 21:33:43.018 21181 will report ReduceTask finished 4
-Jul 23 21:33:43.020 ReduceTaskSolved 4
-Jul 23 21:33:43.042 21182 will report ReduceTask finished 5
-Jul 23 21:33:43.044 ReduceTaskSolved 5
-Jul 23 21:33:45.024 AllocateReduceTask 6
-Jul 23 21:33:45.025 21181 start ReduceTask 6
-Jul 23 21:33:45.047 AllocateReduceTask 7
-Jul 23 21:33:45.049 21182 start ReduceTask 7
-Jul 23 21:33:45.208 21181 will report ReduceTask finished 6
-Jul 23 21:33:45.210 ReduceTaskSolved 6
-Jul 23 21:33:45.221 21182 will report ReduceTask finished 7
-Jul 23 21:33:45.223 ReduceTaskSolved 7
-Jul 23 21:33:47.213 AllocateReduceTask 8
-Jul 23 21:33:47.214 21181 start ReduceTask 8
-Jul 23 21:33:47.226 AllocateReduceTask 9
-Jul 23 21:33:47.227 21182 start ReduceTask 9
-Jul 23 21:33:47.445 21181 will report ReduceTask finished 8
-Jul 23 21:33:47.447 ReduceTaskSolved 8
-Jul 23 21:33:47.454 21182 will report ReduceTask finished 9
-Jul 23 21:33:47.456 ReduceTaskSolved 9
+Jul 24 14:29:43.571 Make a Master 4230
+Jul 24 14:29:44.598 Make a Worker 4239
+Jul 24 14:29:44.600 Make a Worker 4240
+Jul 24 14:29:44.607 AllocateMapTask 0
+Jul 24 14:29:44.609 AllocateMapTask 1
+Jul 24 14:29:44.610 4240 start MapTask ../pg-being_ernest.txt
+Jul 24 14:29:44.610 4239 start MapTask ../pg-dorian_gray.txt
+Jul 24 14:29:44.745 4240 will report MapTask finished ../pg-being_ernest.txt
+Jul 24 14:29:44.753 MapTaskSolved 0
+Jul 24 14:29:44.944 4239 will report MapTask finished ../pg-dorian_gray.txt
+Jul 24 14:29:44.956 MapTaskSolved 1
+Jul 24 14:29:46.757 AllocateMapTask 2
+Jul 24 14:29:46.758 4240 start MapTask ../pg-frankenstein.txt
+Jul 24 14:29:46.947 4240 will report MapTask finished ../pg-frankenstein.txt
+Jul 24 14:29:46.949 MapTaskSolved 2
+Jul 24 14:29:46.959 AllocateMapTask 3
+Jul 24 14:29:46.960 4239 start MapTask ../pg-grimm.txt
+Jul 24 14:29:47.186 4239 will report MapTask finished ../pg-grimm.txt
+Jul 24 14:29:47.188 MapTaskSolved 3
+Jul 24 14:29:48.953 AllocateMapTask 4
+Jul 24 14:29:48.954 4240 start MapTask ../pg-huckleberry_finn.txt
+Jul 24 14:29:49.158 4240 will report MapTask finished ../pg-huckleberry_finn.txt
+Jul 24 14:29:49.160 MapTaskSolved 4
+Jul 24 14:29:49.191 AllocateMapTask 5
+Jul 24 14:29:49.192 4239 start MapTask ../pg-metamorphosis.txt
+Jul 24 14:29:49.321 4239 will report MapTask finished ../pg-metamorphosis.txt
+Jul 24 14:29:49.323 MapTaskSolved 5
+Jul 24 14:29:51.163 AllocateMapTask 6
+Jul 24 14:29:51.164 4240 start MapTask ../pg-sherlock_holmes.txt
+Jul 24 14:29:51.326 AllocateMapTask 7
+Jul 24 14:29:51.328 4239 start MapTask ../pg-tom_sawyer.txt
+Jul 24 14:29:51.400 4240 will report MapTask finished ../pg-sherlock_holmes.txt
+Jul 24 14:29:51.401 MapTaskSolved 6
+Jul 24 14:29:51.545 4239 will report MapTask finished ../pg-tom_sawyer.txt
+Jul 24 14:29:51.547 MapTaskSolved 7
+Jul 24 14:29:53.405 AllocateReduceTask 0
+Jul 24 14:29:53.407 4240 start ReduceTask 0
+Jul 24 14:29:53.550 AllocateReduceTask 1
+Jul 24 14:29:53.551 4239 start ReduceTask 1
+Jul 24 14:29:53.564 4240 will report ReduceTask finished 0
+Jul 24 14:29:53.566 ReduceTaskSolved 0
+Jul 24 14:29:53.710 4239 will report ReduceTask finished 1
+Jul 24 14:29:53.712 ReduceTaskSolved 1
+Jul 24 14:29:55.570 AllocateReduceTask 2
+Jul 24 14:29:55.571 4240 start ReduceTask 2
+Jul 24 14:29:55.716 AllocateReduceTask 3
+Jul 24 14:29:55.718 4239 start ReduceTask 3
+Jul 24 14:29:55.731 4240 will report ReduceTask finished 2
+Jul 24 14:29:55.733 ReduceTaskSolved 2
+Jul 24 14:29:55.883 4239 will report ReduceTask finished 3
+Jul 24 14:29:55.884 ReduceTaskSolved 3
+Jul 24 14:29:57.737 AllocateReduceTask 4
+Jul 24 14:29:57.738 4240 start ReduceTask 4
+Jul 24 14:29:57.887 AllocateReduceTask 5
+Jul 24 14:29:57.888 4239 start ReduceTask 5
+Jul 24 14:29:57.911 4240 will report ReduceTask finished 4
+Jul 24 14:29:57.917 ReduceTaskSolved 4
+Jul 24 14:29:58.071 4239 will report ReduceTask finished 5
+Jul 24 14:29:58.072 ReduceTaskSolved 5
+Jul 24 14:29:59.920 AllocateReduceTask 6
+Jul 24 14:29:59.922 4240 start ReduceTask 6
+Jul 24 14:30:00.076 AllocateReduceTask 7
+Jul 24 14:30:00.077 4239 start ReduceTask 7
+Jul 24 14:30:00.220 4240 will report ReduceTask finished 6
+Jul 24 14:30:00.222 ReduceTaskSolved 6
+Jul 24 14:30:00.356 4239 will report ReduceTask finished 7
+Jul 24 14:30:00.359 ReduceTaskSolved 7
+Jul 24 14:30:02.225 AllocateReduceTask 8
+Jul 24 14:30:02.226 4240 start ReduceTask 8
+Jul 24 14:30:02.362 AllocateReduceTask 9
+Jul 24 14:30:02.363 4239 start ReduceTask 9
+Jul 24 14:30:02.392 4240 will report ReduceTask finished 8
+Jul 24 14:30:02.394 ReduceTaskSolved 8
+Jul 24 14:30:02.539 4239 will report ReduceTask finished 9
+Jul 24 14:30:02.541 ReduceTaskSolved 9
 --- indexer test: PASS
 *** Starting map parallelism test.
-Jul 23 21:33:50.505 Make a Master 21241
-Jul 23 21:33:51.524 Make a Worker 21251
-Jul 23 21:33:51.524 Make a Worker 21250
-Jul 23 21:33:51.529 AllocateMapTask 0
-Jul 23 21:33:51.529 AllocateMapTask 1
-Jul 23 21:33:51.530 21250 start MapTask ../pg-being_ernest.txt
-Jul 23 21:33:51.530 21251 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:33:52.544 21250 will report MapTask finished ../pg-being_ernest.txt
-Jul 23 21:33:52.546 MapTaskSolved 0
-Jul 23 21:33:52.553 21251 will report MapTask finished ../pg-dorian_gray.txt
-Jul 23 21:33:52.555 MapTaskSolved 1
-Jul 23 21:33:54.549 AllocateMapTask 2
-Jul 23 21:33:54.550 21250 start MapTask ../pg-frankenstein.txt
-Jul 23 21:33:54.559 AllocateMapTask 3
-Jul 23 21:33:54.560 21251 start MapTask ../pg-grimm.txt
-Jul 23 21:33:55.569 21250 will report MapTask finished ../pg-frankenstein.txt
-Jul 23 21:33:55.571 MapTaskSolved 2
-Jul 23 21:33:55.576 21251 will report MapTask finished ../pg-grimm.txt
-Jul 23 21:33:55.578 MapTaskSolved 3
-Jul 23 21:33:57.575 AllocateMapTask 4
-Jul 23 21:33:57.576 21250 start MapTask ../pg-huckleberry_finn.txt
-Jul 23 21:33:57.582 AllocateMapTask 5
-Jul 23 21:33:57.583 21251 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:33:58.597 21250 will report MapTask finished ../pg-huckleberry_finn.txt
-Jul 23 21:33:58.598 21251 will report MapTask finished ../pg-metamorphosis.txt
-Jul 23 21:33:58.599 MapTaskSolved 4
-Jul 23 21:33:58.601 MapTaskSolved 5
-Jul 23 21:34:00.603 AllocateMapTask 6
-Jul 23 21:34:00.604 21250 start MapTask ../pg-sherlock_holmes.txt
-Jul 23 21:34:00.605 AllocateMapTask 7
-Jul 23 21:34:00.606 21251 start MapTask ../pg-tom_sawyer.txt
-Jul 23 21:34:01.621 21251 will report MapTask finished ../pg-tom_sawyer.txt
-Jul 23 21:34:01.623 MapTaskSolved 7
-Jul 23 21:34:01.627 21250 will report MapTask finished ../pg-sherlock_holmes.txt
-Jul 23 21:34:01.629 MapTaskSolved 6
-Jul 23 21:34:03.627 AllocateReduceTask 0
-Jul 23 21:34:03.628 21251 start ReduceTask 0
-Jul 23 21:34:03.628 21251 will report ReduceTask finished 0
-Jul 23 21:34:03.630 ReduceTaskSolved 0
-Jul 23 21:34:03.632 AllocateReduceTask 1
-Jul 23 21:34:03.633 21250 start ReduceTask 1
-Jul 23 21:34:03.634 21250 will report ReduceTask finished 1
-Jul 23 21:34:03.636 ReduceTaskSolved 1
-Jul 23 21:34:05.634 AllocateReduceTask 2
-Jul 23 21:34:05.635 21251 start ReduceTask 2
-Jul 23 21:34:05.635 21251 will report ReduceTask finished 2
-Jul 23 21:34:05.637 ReduceTaskSolved 2
-Jul 23 21:34:05.639 AllocateReduceTask 3
-Jul 23 21:34:05.640 21250 start ReduceTask 3
-Jul 23 21:34:05.640 21250 will report ReduceTask finished 3
-Jul 23 21:34:05.643 ReduceTaskSolved 3
-Jul 23 21:34:07.641 AllocateReduceTask 4
-Jul 23 21:34:07.642 21251 start ReduceTask 4
-Jul 23 21:34:07.643 21251 will report ReduceTask finished 4
-Jul 23 21:34:07.645 ReduceTaskSolved 4
-Jul 23 21:34:07.645 AllocateReduceTask 5
-Jul 23 21:34:07.647 21250 start ReduceTask 5
-Jul 23 21:34:07.647 21250 will report ReduceTask finished 5
-Jul 23 21:34:07.649 ReduceTaskSolved 5
-Jul 23 21:34:09.648 AllocateReduceTask 6
-Jul 23 21:34:09.649 21251 start ReduceTask 6
-Jul 23 21:34:09.649 21251 will report ReduceTask finished 6
-Jul 23 21:34:09.651 ReduceTaskSolved 6
-Jul 23 21:34:09.651 AllocateReduceTask 7
-Jul 23 21:34:09.652 21250 start ReduceTask 7
-Jul 23 21:34:09.653 21250 will report ReduceTask finished 7
-Jul 23 21:34:09.655 ReduceTaskSolved 7
-Jul 23 21:34:11.654 AllocateReduceTask 8
-Jul 23 21:34:11.655 21251 start ReduceTask 8
-Jul 23 21:34:11.656 21251 will report ReduceTask finished 8
-Jul 23 21:34:11.658 ReduceTaskSolved 8
-Jul 23 21:34:11.658 AllocateReduceTask 9
-Jul 23 21:34:11.659 21250 start ReduceTask 9
-Jul 23 21:34:11.659 21250 will report ReduceTask finished 9
-Jul 23 21:34:11.661 ReduceTaskSolved 9
+Jul 24 14:30:05.566 Make a Master 4267
+Jul 24 14:30:06.582 Make a Worker 4277
+Jul 24 14:30:06.584 Make a Worker 4276
+Jul 24 14:30:06.587 AllocateMapTask 0
+Jul 24 14:30:06.588 AllocateMapTask 1
+Jul 24 14:30:06.590 4277 start MapTask ../pg-being_ernest.txt
+Jul 24 14:30:06.590 4276 start MapTask ../pg-dorian_gray.txt
+Jul 24 14:30:07.608 4277 will report MapTask finished ../pg-being_ernest.txt
+Jul 24 14:30:07.610 MapTaskSolved 0
+Jul 24 14:30:07.619 4276 will report MapTask finished ../pg-dorian_gray.txt
+Jul 24 14:30:07.621 MapTaskSolved 1
+Jul 24 14:30:09.615 AllocateMapTask 2
+Jul 24 14:30:09.616 4277 start MapTask ../pg-frankenstein.txt
+Jul 24 14:30:09.626 AllocateMapTask 3
+Jul 24 14:30:09.627 4276 start MapTask ../pg-grimm.txt
+Jul 24 14:30:10.636 4277 will report MapTask finished ../pg-frankenstein.txt
+Jul 24 14:30:10.638 MapTaskSolved 2
+Jul 24 14:30:10.650 4276 will report MapTask finished ../pg-grimm.txt
+Jul 24 14:30:10.652 MapTaskSolved 3
+Jul 24 14:30:12.641 AllocateMapTask 4
+Jul 24 14:30:12.642 4277 start MapTask ../pg-huckleberry_finn.txt
+Jul 24 14:30:12.655 AllocateMapTask 5
+Jul 24 14:30:12.656 4276 start MapTask ../pg-metamorphosis.txt
+Jul 24 14:30:13.663 4277 will report MapTask finished ../pg-huckleberry_finn.txt
+Jul 24 14:30:13.665 MapTaskSolved 4
+Jul 24 14:30:13.671 4276 will report MapTask finished ../pg-metamorphosis.txt
+Jul 24 14:30:13.673 MapTaskSolved 5
+Jul 24 14:30:15.669 AllocateMapTask 6
+Jul 24 14:30:15.670 4277 start MapTask ../pg-sherlock_holmes.txt
+Jul 24 14:30:15.676 AllocateMapTask 7
+Jul 24 14:30:15.677 4276 start MapTask ../pg-tom_sawyer.txt
+Jul 24 14:30:16.693 4277 will report MapTask finished ../pg-sherlock_holmes.txt
+Jul 24 14:30:16.695 MapTaskSolved 6
+Jul 24 14:30:16.697 4276 will report MapTask finished ../pg-tom_sawyer.txt
+Jul 24 14:30:16.700 MapTaskSolved 7
+Jul 24 14:30:18.699 AllocateReduceTask 0
+Jul 24 14:30:18.700 4277 start ReduceTask 0
+Jul 24 14:30:18.700 4277 will report ReduceTask finished 0
+Jul 24 14:30:18.702 ReduceTaskSolved 0
+Jul 24 14:30:18.703 AllocateReduceTask 1
+Jul 24 14:30:18.704 4276 start ReduceTask 1
+Jul 24 14:30:18.704 4276 will report ReduceTask finished 1
+Jul 24 14:30:18.705 ReduceTaskSolved 1
+Jul 24 14:30:20.706 AllocateReduceTask 2
+Jul 24 14:30:20.707 4277 start ReduceTask 2
+Jul 24 14:30:20.707 4277 will report ReduceTask finished 2
+Jul 24 14:30:20.709 AllocateReduceTask 3
+Jul 24 14:30:20.710 4276 start ReduceTask 3
+Jul 24 14:30:20.711 4276 will report ReduceTask finished 3
+Jul 24 14:30:20.711 ReduceTaskSolved 2
+Jul 24 14:30:20.713 ReduceTaskSolved 3
+Jul 24 14:30:22.714 AllocateReduceTask 4
+Jul 24 14:30:22.715 AllocateReduceTask 5
+Jul 24 14:30:22.715 4277 start ReduceTask 4
+Jul 24 14:30:22.716 4277 will report ReduceTask finished 4
+Jul 24 14:30:22.716 4276 start ReduceTask 5
+Jul 24 14:30:22.716 4276 will report ReduceTask finished 5
+Jul 24 14:30:22.718 ReduceTaskSolved 4
+Jul 24 14:30:22.718 ReduceTaskSolved 5
+Jul 24 14:30:24.721 AllocateReduceTask 6
+Jul 24 14:30:24.721 AllocateReduceTask 7
+Jul 24 14:30:24.722 4277 start ReduceTask 6
+Jul 24 14:30:24.724 4277 will report ReduceTask finished 6
+Jul 24 14:30:24.725 4276 start ReduceTask 7
+Jul 24 14:30:24.725 4276 will report ReduceTask finished 7
+Jul 24 14:30:24.726 ReduceTaskSolved 6
+Jul 24 14:30:24.727 ReduceTaskSolved 7
+Jul 24 14:30:26.730 AllocateReduceTask 8
+Jul 24 14:30:26.731 AllocateReduceTask 9
+Jul 24 14:30:26.731 4276 start ReduceTask 8
+Jul 24 14:30:26.731 4277 start ReduceTask 9
+Jul 24 14:30:26.732 4277 will report ReduceTask finished 9
+Jul 24 14:30:26.732 4276 will report ReduceTask finished 8
+Jul 24 14:30:26.734 ReduceTaskSolved 9
+Jul 24 14:30:26.735 ReduceTaskSolved 8
 --- map parallelism test: PASS
 *** Starting reduce parallelism test.
-Jul 23 21:34:14.688 Make a Master 21312
-Jul 23 21:34:15.699 Make a Worker 21328
-Jul 23 21:34:15.699 Make a Worker 21329
-Jul 23 21:34:15.705 AllocateMapTask 0
-Jul 23 21:34:15.706 AllocateMapTask 1
-Jul 23 21:34:15.707 21329 start MapTask ../pg-being_ernest.txt
-Jul 23 21:34:15.707 21328 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:34:15.713 21329 will report MapTask finished ../pg-being_ernest.txt
-Jul 23 21:34:15.716 MapTaskSolved 0
-Jul 23 21:34:15.716 21328 will report MapTask finished ../pg-dorian_gray.txt
-Jul 23 21:34:15.718 MapTaskSolved 1
-Jul 23 21:34:17.719 AllocateMapTask 2
-Jul 23 21:34:17.723 21329 start MapTask ../pg-frankenstein.txt
-Jul 23 21:34:17.724 AllocateMapTask 3
-Jul 23 21:34:17.725 21328 start MapTask ../pg-grimm.txt
-Jul 23 21:34:17.731 21329 will report MapTask finished ../pg-frankenstein.txt
-Jul 23 21:34:17.733 MapTaskSolved 2
-Jul 23 21:34:17.741 21328 will report MapTask finished ../pg-grimm.txt
-Jul 23 21:34:17.742 MapTaskSolved 3
-Jul 23 21:34:19.741 AllocateMapTask 4
-Jul 23 21:34:19.742 21329 start MapTask ../pg-huckleberry_finn.txt
-Jul 23 21:34:19.746 AllocateMapTask 5
-Jul 23 21:34:19.747 21328 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:34:19.752 21328 will report MapTask finished ../pg-metamorphosis.txt
-Jul 23 21:34:19.754 MapTaskSolved 5
-Jul 23 21:34:19.771 21329 will report MapTask finished ../pg-huckleberry_finn.txt
-Jul 23 21:34:19.774 MapTaskSolved 4
-Jul 23 21:34:21.758 AllocateMapTask 6
-Jul 23 21:34:21.759 21328 start MapTask ../pg-sherlock_holmes.txt
-Jul 23 21:34:21.769 21328 will report MapTask finished ../pg-sherlock_holmes.txt
-Jul 23 21:34:21.771 MapTaskSolved 6
-Jul 23 21:34:21.778 AllocateMapTask 7
-Jul 23 21:34:21.779 21329 start MapTask ../pg-tom_sawyer.txt
-Jul 23 21:34:21.789 21329 will report MapTask finished ../pg-tom_sawyer.txt
-Jul 23 21:34:21.791 MapTaskSolved 7
-Jul 23 21:34:23.774 AllocateReduceTask 0
-Jul 23 21:34:23.775 21328 start ReduceTask 0
-Jul 23 21:34:23.794 AllocateReduceTask 1
-Jul 23 21:34:23.795 21329 start ReduceTask 1
-Jul 23 21:34:24.781 21328 will report ReduceTask finished 0
-Jul 23 21:34:24.784 ReduceTaskSolved 0
-Jul 23 21:34:24.800 21329 will report ReduceTask finished 1
-Jul 23 21:34:24.802 ReduceTaskSolved 1
-Jul 23 21:34:26.788 AllocateReduceTask 2
-Jul 23 21:34:26.790 21328 start ReduceTask 2
-Jul 23 21:34:26.806 AllocateReduceTask 3
-Jul 23 21:34:26.807 21329 start ReduceTask 3
-Jul 23 21:34:27.797 21328 will report ReduceTask finished 2
-Jul 23 21:34:27.799 ReduceTaskSolved 2
-Jul 23 21:34:28.819 21329 will report ReduceTask finished 3
-Jul 23 21:34:28.821 ReduceTaskSolved 3
-Jul 23 21:34:29.803 AllocateReduceTask 4
-Jul 23 21:34:29.804 21328 start ReduceTask 4
-Jul 23 21:34:30.825 AllocateReduceTask 5
-Jul 23 21:34:30.827 21329 start ReduceTask 5
-Jul 23 21:34:31.817 21328 will report ReduceTask finished 4
-Jul 23 21:34:31.819 ReduceTaskSolved 4
-Jul 23 21:34:31.836 21329 will report ReduceTask finished 5
-Jul 23 21:34:31.838 ReduceTaskSolved 5
-Jul 23 21:34:33.822 AllocateReduceTask 6
-Jul 23 21:34:33.823 21328 start ReduceTask 6
-Jul 23 21:34:33.842 AllocateReduceTask 7
-Jul 23 21:34:33.843 21329 start ReduceTask 7
-Jul 23 21:34:33.843 21329 will report ReduceTask finished 7
-Jul 23 21:34:33.845 ReduceTaskSolved 7
-Jul 23 21:34:34.829 21328 will report ReduceTask finished 6
-Jul 23 21:34:34.831 ReduceTaskSolved 6
-Jul 23 21:34:35.848 AllocateReduceTask 8
-Jul 23 21:34:35.849 21329 start ReduceTask 8
-Jul 23 21:34:35.849 21329 will report ReduceTask finished 8
-Jul 23 21:34:35.855 ReduceTaskSolved 8
-Jul 23 21:34:36.835 AllocateReduceTask 9
-Jul 23 21:34:36.836 21328 start ReduceTask 9
-Jul 23 21:34:37.843 21328 will report ReduceTask finished 9
-Jul 23 21:34:37.845 ReduceTaskSolved 9
+Jul 24 14:30:29.766 Make a Master 4307
+Jul 24 14:30:30.777 Make a Worker 4316
+Jul 24 14:30:30.784 AllocateMapTask 0
+Jul 24 14:30:30.786 4316 start MapTask ../pg-being_ernest.txt
+Jul 24 14:30:30.791 4316 will report MapTask finished ../pg-being_ernest.txt
+Jul 24 14:30:30.793 MapTaskSolved 0
+Jul 24 14:30:30.802 Make a Worker 4315
+Jul 24 14:30:30.804 AllocateMapTask 1
+Jul 24 14:30:30.805 4315 start MapTask ../pg-dorian_gray.txt
+Jul 24 14:30:30.816 4315 will report MapTask finished ../pg-dorian_gray.txt
+Jul 24 14:30:30.818 MapTaskSolved 1
+Jul 24 14:30:32.796 AllocateMapTask 2
+Jul 24 14:30:32.798 4316 start MapTask ../pg-frankenstein.txt
+Jul 24 14:30:32.806 4316 will report MapTask finished ../pg-frankenstein.txt
+Jul 24 14:30:32.809 MapTaskSolved 2
+Jul 24 14:30:32.822 AllocateMapTask 3
+Jul 24 14:30:32.823 4315 start MapTask ../pg-grimm.txt
+Jul 24 14:30:32.835 4315 will report MapTask finished ../pg-grimm.txt
+Jul 24 14:30:32.837 MapTaskSolved 3
+Jul 24 14:30:34.812 AllocateMapTask 4
+Jul 24 14:30:34.813 4316 start MapTask ../pg-huckleberry_finn.txt
+Jul 24 14:30:34.828 4316 will report MapTask finished ../pg-huckleberry_finn.txt
+Jul 24 14:30:34.830 MapTaskSolved 4
+Jul 24 14:30:34.840 AllocateMapTask 5
+Jul 24 14:30:34.841 4315 start MapTask ../pg-metamorphosis.txt
+Jul 24 14:30:34.845 4315 will report MapTask finished ../pg-metamorphosis.txt
+Jul 24 14:30:34.848 MapTaskSolved 5
+Jul 24 14:30:36.834 AllocateMapTask 6
+Jul 24 14:30:36.835 4316 start MapTask ../pg-sherlock_holmes.txt
+Jul 24 14:30:36.851 AllocateMapTask 7
+Jul 24 14:30:36.852 4315 start MapTask ../pg-tom_sawyer.txt
+Jul 24 14:30:36.866 4315 will report MapTask finished ../pg-tom_sawyer.txt
+Jul 24 14:30:36.866 4316 will report MapTask finished ../pg-sherlock_holmes.txt
+Jul 24 14:30:36.868 MapTaskSolved 6
+Jul 24 14:30:36.869 MapTaskSolved 7
+Jul 24 14:30:38.873 AllocateReduceTask 0
+Jul 24 14:30:38.873 AllocateReduceTask 1
+Jul 24 14:30:38.874 4316 start ReduceTask 0
+Jul 24 14:30:38.874 4315 start ReduceTask 1
+Jul 24 14:30:39.882 4316 will report ReduceTask finished 0
+Jul 24 14:30:39.884 ReduceTaskSolved 0
+Jul 24 14:30:39.891 4315 will report ReduceTask finished 1
+Jul 24 14:30:39.894 ReduceTaskSolved 1
+Jul 24 14:30:41.888 AllocateReduceTask 2
+Jul 24 14:30:41.889 4316 start ReduceTask 2
+Jul 24 14:30:41.898 AllocateReduceTask 3
+Jul 24 14:30:41.899 4315 start ReduceTask 3
+Jul 24 14:30:42.894 4316 will report ReduceTask finished 2
+Jul 24 14:30:42.896 ReduceTaskSolved 2
+Jul 24 14:30:43.917 4315 will report ReduceTask finished 3
+Jul 24 14:30:43.920 ReduceTaskSolved 3
+Jul 24 14:30:44.899 AllocateReduceTask 4
+Jul 24 14:30:44.900 4316 start ReduceTask 4
+Jul 24 14:30:45.923 AllocateReduceTask 5
+Jul 24 14:30:45.924 4315 start ReduceTask 5
+Jul 24 14:30:46.927 4316 will report ReduceTask finished 4
+Jul 24 14:30:46.930 ReduceTaskSolved 4
+Jul 24 14:30:46.933 4315 will report ReduceTask finished 5
+Jul 24 14:30:46.935 ReduceTaskSolved 5
+Jul 24 14:30:48.933 AllocateReduceTask 6
+Jul 24 14:30:48.934 4316 start ReduceTask 6
+Jul 24 14:30:48.938 AllocateReduceTask 7
+Jul 24 14:30:48.939 4315 start ReduceTask 7
+Jul 24 14:30:48.939 4315 will report ReduceTask finished 7
+Jul 24 14:30:48.941 ReduceTaskSolved 7
+Jul 24 14:30:49.941 4316 will report ReduceTask finished 6
+Jul 24 14:30:49.944 ReduceTaskSolved 6
+Jul 24 14:30:50.944 AllocateReduceTask 8
+Jul 24 14:30:50.945 4315 start ReduceTask 8
+Jul 24 14:30:50.946 4315 will report ReduceTask finished 8
+Jul 24 14:30:50.947 ReduceTaskSolved 8
+Jul 24 14:30:51.947 AllocateReduceTask 9
+Jul 24 14:30:51.949 4316 start ReduceTask 9
+Jul 24 14:30:52.955 4316 will report ReduceTask finished 9
+Jul 24 14:30:52.957 ReduceTaskSolved 9
 --- reduce parallelism test: PASS
 *** Starting crash test.
-Jul 23 21:34:41.977 Make a Master 21407
-Jul 23 21:34:42.994 Make a Worker 21415
-Jul 23 21:34:42.997 AllocateMapTask 0
-Jul 23 21:34:42.999 Make a Worker 21423
-Jul 23 21:34:42.999 21415 start MapTask ../pg-being_ernest.txt
-Jul 23 21:34:43.003 21415 will report MapTask finished ../pg-being_ernest.txt
-Jul 23 21:34:43.004 Make a Worker 21422
-Jul 23 21:34:43.006 MapTaskSolved 0
-Jul 23 21:34:43.007 AllocateMapTask 1
-Jul 23 21:34:43.008 21423 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:34:43.009 AllocateMapTask 2
-Jul 23 21:34:43.010 21422 start MapTask ../pg-frankenstein.txt
-Jul 23 21:34:43.014 Make a Worker 21421
-Jul 23 21:34:43.020 AllocateMapTask 3
-Jul 23 21:34:43.021 21421 start MapTask ../pg-grimm.txt
-Jul 23 21:34:43.031 21422 will report MapTask finished ../pg-frankenstein.txt
-Jul 23 21:34:43.034 MapTaskSolved 2
-Jul 23 21:34:44.050 Make a Worker 21453
-Jul 23 21:34:44.054 AllocateMapTask 4
-Jul 23 21:34:44.055 21453 start MapTask ../pg-huckleberry_finn.txt
-Jul 23 21:34:44.066 Make a Worker 21461
-Jul 23 21:34:44.071 AllocateMapTask 5
-Jul 23 21:34:44.072 21461 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:34:45.009 AllocateMapTask 6
-Jul 23 21:34:45.010 21415 start MapTask ../pg-sherlock_holmes.txt
-Jul 23 21:34:45.039 AllocateMapTask 7
-Jul 23 21:34:45.040 21422 start MapTask ../pg-tom_sawyer.txt
-Jul 23 21:34:45.048 21422 will report MapTask finished ../pg-tom_sawyer.txt
-Jul 23 21:34:45.051 MapTaskSolved 7
-Jul 23 21:34:45.106 Make a Worker 21471
-Jul 23 21:34:48.064 21453 will report MapTask finished ../pg-huckleberry_finn.txt
-Jul 23 21:34:48.066 MapTaskSolved 4
-Jul 23 21:34:53.009 MapTask not finished 1
-Jul 23 21:34:53.021 MapTask not finished 3
-Jul 23 21:34:53.064 AllocateMapTask 1
-Jul 23 21:34:53.065 21422 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:34:53.121 AllocateMapTask 3
-Jul 23 21:34:53.122 21471 start MapTask ../pg-grimm.txt
-Jul 23 21:34:53.129 21471 will report MapTask finished ../pg-grimm.txt
-Jul 23 21:34:53.132 MapTaskSolved 3
-Jul 23 21:34:54.072 MapTask not finished 5
-Jul 23 21:34:54.079 AllocateMapTask 5
-Jul 23 21:34:54.081 21453 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:34:54.103 Make a Worker 21497
-Jul 23 21:34:55.010 MapTask not finished 6
-Jul 23 21:34:55.115 Make a Worker 21506
-Jul 23 21:34:55.117 AllocateMapTask 6
-Jul 23 21:34:55.118 21506 start MapTask ../pg-sherlock_holmes.txt
-Jul 23 21:34:55.128 21506 will report MapTask finished ../pg-sherlock_holmes.txt
-Jul 23 21:34:55.130 MapTaskSolved 6
-Jul 23 21:35:03.064 MapTask not finished 1
-Jul 23 21:35:03.144 AllocateMapTask 1
-Jul 23 21:35:03.145 21506 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:35:04.080 MapTask not finished 5
-Jul 23 21:35:04.120 AllocateMapTask 5
-Jul 23 21:35:04.121 21497 start MapTask ../pg-metamorphosis.txt
-Jul 23 21:35:04.185 Make a Worker 21523
-Jul 23 21:35:06.715 21497 will report MapTask finished ../pg-metamorphosis.txt
-Jul 23 21:35:06.717 MapTaskSolved 5
-Jul 23 21:35:13.145 MapTask not finished 1
-Jul 23 21:35:13.165 AllocateMapTask 1
-Jul 23 21:35:13.165 21471 start MapTask ../pg-dorian_gray.txt
-Jul 23 21:35:19.766 21471 will report MapTask finished ../pg-dorian_gray.txt
-Jul 23 21:35:19.768 MapTaskSolved 1
-Jul 23 21:35:20.214 AllocateReduceTask 0
-Jul 23 21:35:20.215 21523 start ReduceTask 0
-Jul 23 21:35:20.738 AllocateReduceTask 1
-Jul 23 21:35:20.739 21497 start ReduceTask 1
-Jul 23 21:35:20.740 21497 will report ReduceTask finished 1
-Jul 23 21:35:20.742 ReduceTaskSolved 1
-Jul 23 21:35:21.246 Make a Worker 21555
-Jul 23 21:35:21.250 AllocateReduceTask 2
-Jul 23 21:35:21.251 21555 start ReduceTask 2
-Jul 23 21:35:21.771 AllocateReduceTask 3
-Jul 23 21:35:21.772 21471 start ReduceTask 3
-Jul 23 21:35:21.772 21471 will report ReduceTask finished 3
-Jul 23 21:35:21.774 ReduceTaskSolved 3
-Jul 23 21:35:22.745 AllocateReduceTask 4
-Jul 23 21:35:22.746 21497 start ReduceTask 4
-Jul 23 21:35:22.746 21497 will report ReduceTask finished 4
-Jul 23 21:35:22.748 ReduceTaskSolved 4
-Jul 23 21:35:23.777 AllocateReduceTask 5
-Jul 23 21:35:23.778 21471 start ReduceTask 5
-Jul 23 21:35:24.176 21555 will report ReduceTask finished 2
-Jul 23 21:35:24.178 ReduceTaskSolved 2
-Jul 23 21:35:24.751 AllocateReduceTask 6
-Jul 23 21:35:24.752 21497 start ReduceTask 6
-Jul 23 21:35:24.752 21497 will report ReduceTask finished 6
-Jul 23 21:35:24.755 ReduceTaskSolved 6
-Jul 23 21:35:24.820 Make a Worker 21572
-Jul 23 21:35:24.823 AllocateReduceTask 7
-Jul 23 21:35:24.828 21572 start ReduceTask 7
-Jul 23 21:35:24.829 21572 will report ReduceTask finished 7
-Jul 23 21:35:24.832 ReduceTaskSolved 7
-Jul 23 21:35:26.182 AllocateReduceTask 8
-Jul 23 21:35:26.183 21555 start ReduceTask 8
-Jul 23 21:35:26.183 21555 will report ReduceTask finished 8
-Jul 23 21:35:26.185 ReduceTaskSolved 8
-Jul 23 21:35:26.758 AllocateReduceTask 9
-Jul 23 21:35:26.759 21497 start ReduceTask 9
-Jul 23 21:35:27.785 Make a Worker 21580
-Jul 23 21:35:30.214 ReduceTask not finished 0
-Jul 23 21:35:30.844 AllocateReduceTask 0
-Jul 23 21:35:30.845 21572 start ReduceTask 0
-Jul 23 21:35:33.778 ReduceTask not finished 5
-Jul 23 21:35:33.798 AllocateReduceTask 5
-Jul 23 21:35:33.799 21580 start ReduceTask 5
-Jul 23 21:35:35.075 21580 will report ReduceTask finished 5
-Jul 23 21:35:35.077 ReduceTaskSolved 5
-Jul 23 21:35:36.759 ReduceTask not finished 9
-Jul 23 21:35:37.080 AllocateReduceTask 9
-Jul 23 21:35:37.081 21580 start ReduceTask 9
-Jul 23 21:35:38.107 Make a Worker 21605
-Jul 23 21:35:39.697 21572 will report ReduceTask finished 0
-Jul 23 21:35:39.701 ReduceTaskSolved 0
-Jul 23 21:35:47.081 ReduceTask not finished 9
-Jul 23 21:35:47.714 AllocateReduceTask 9
-Jul 23 21:35:47.715 21572 start ReduceTask 9
-Jul 23 21:35:53.353 21572 will report ReduceTask finished 9
-Jul 23 21:35:53.355 ReduceTaskSolved 9
+Jul 24 14:30:57.178 Make a Master 4355
+Jul 24 14:30:58.217 Make a Worker 4363
+Jul 24 14:30:58.221 Make a Worker 4371
+Jul 24 14:30:58.224 AllocateMapTask 0
+Jul 24 14:30:58.224 AllocateMapTask 1
+Jul 24 14:30:58.225 4363 start MapTask ../pg-being_ernest.txt
+Jul 24 14:30:58.227 4371 start MapTask ../pg-dorian_gray.txt
+Jul 24 14:30:58.223 Make a Worker 4370
+Jul 24 14:30:58.227 Make a Worker 4369
+Jul 24 14:30:58.234 4363 will report MapTask finished ../pg-being_ernest.txt
+Jul 24 14:30:58.234 AllocateMapTask 2
+Jul 24 14:30:58.247 MapTaskSolved 0
+Jul 24 14:30:58.248 4370 start MapTask ../pg-frankenstein.txt
+Jul 24 14:30:58.248 AllocateMapTask 3
+Jul 24 14:30:58.250 4369 start MapTask ../pg-grimm.txt
+Jul 24 14:30:59.300 Make a Worker 4403
+Jul 24 14:30:59.303 AllocateMapTask 4
+Jul 24 14:30:59.304 4403 start MapTask ../pg-huckleberry_finn.txt
+Jul 24 14:30:59.315 Make a Worker 4411
+Jul 24 14:30:59.317 AllocateMapTask 5
+Jul 24 14:30:59.319 4411 start MapTask ../pg-metamorphosis.txt
+Jul 24 14:30:59.325 4411 will report MapTask finished ../pg-metamorphosis.txt
+Jul 24 14:30:59.327 4403 will report MapTask finished ../pg-huckleberry_finn.txt
+Jul 24 14:30:59.327 MapTaskSolved 5
+Jul 24 14:30:59.330 MapTaskSolved 4
+Jul 24 14:30:59.337 Make a Worker 4413
+Jul 24 14:30:59.342 AllocateMapTask 6
+Jul 24 14:30:59.344 4413 start MapTask ../pg-sherlock_holmes.txt
+Jul 24 14:30:59.356 4413 will report MapTask finished ../pg-sherlock_holmes.txt
+Jul 24 14:30:59.358 MapTaskSolved 6
+Jul 24 14:31:00.250 AllocateMapTask 7
+Jul 24 14:31:00.251 4363 start MapTask ../pg-tom_sawyer.txt
+Jul 24 14:31:00.257 4363 will report MapTask finished ../pg-tom_sawyer.txt
+Jul 24 14:31:00.260 MapTaskSolved 7
+Jul 24 14:31:08.226 MapTask not finished 1
+Jul 24 14:31:08.239 MapTask not finished 2
+Jul 24 14:31:08.250 MapTask not finished 3
+Jul 24 14:31:08.273 AllocateMapTask 1
+Jul 24 14:31:08.274 4363 start MapTask ../pg-dorian_gray.txt
+Jul 24 14:31:09.344 AllocateMapTask 2
+Jul 24 14:31:09.345 4411 start MapTask ../pg-frankenstein.txt
+Jul 24 14:31:09.347 AllocateMapTask 3
+Jul 24 14:31:09.348 4403 start MapTask ../pg-grimm.txt
+Jul 24 14:31:09.356 4411 will report MapTask finished ../pg-frankenstein.txt
+Jul 24 14:31:09.360 MapTaskSolved 2
+Jul 24 14:31:09.364 4403 will report MapTask finished ../pg-grimm.txt
+Jul 24 14:31:09.366 MapTaskSolved 3
+Jul 24 14:31:16.827 4363 will report MapTask finished ../pg-dorian_gray.txt
+Jul 24 14:31:16.829 MapTaskSolved 1
+Jul 24 14:31:17.376 AllocateReduceTask 0
+Jul 24 14:31:17.377 4411 start ReduceTask 0
+Jul 24 14:31:17.380 AllocateReduceTask 1
+Jul 24 14:31:17.382 4403 start ReduceTask 1
+Jul 24 14:31:17.382 4403 will report ReduceTask finished 1
+Jul 24 14:31:17.384 ReduceTaskSolved 1
+Jul 24 14:31:17.390 AllocateReduceTask 2
+Jul 24 14:31:17.391 4413 start ReduceTask 2
+Jul 24 14:31:17.391 4413 will report ReduceTask finished 2
+Jul 24 14:31:17.393 ReduceTaskSolved 2
+Jul 24 14:31:18.413 Make a Worker 4430
+Jul 24 14:31:18.416 AllocateReduceTask 3
+Jul 24 14:31:18.417 4430 start ReduceTask 3
+Jul 24 14:31:18.417 4430 will report ReduceTask finished 3
+Jul 24 14:31:18.419 ReduceTaskSolved 3
+Jul 24 14:31:18.833 AllocateReduceTask 4
+Jul 24 14:31:18.834 4363 start ReduceTask 4
+Jul 24 14:31:18.834 4363 will report ReduceTask finished 4
+Jul 24 14:31:18.836 ReduceTaskSolved 4
+Jul 24 14:31:19.387 AllocateReduceTask 5
+Jul 24 14:31:19.388 4403 start ReduceTask 5
+Jul 24 14:31:19.395 AllocateReduceTask 6
+Jul 24 14:31:19.396 4413 start ReduceTask 6
+Jul 24 14:31:19.397 4413 will report ReduceTask finished 6
+Jul 24 14:31:19.399 ReduceTaskSolved 6
+Jul 24 14:31:20.417 Make a Worker 4438
+Jul 24 14:31:20.419 AllocateReduceTask 7
+Jul 24 14:31:20.420 4438 start ReduceTask 7
+Jul 24 14:31:20.421 4438 will report ReduceTask finished 7
+Jul 24 14:31:20.422 ReduceTaskSolved 7
+Jul 24 14:31:20.422 AllocateReduceTask 8
+Jul 24 14:31:20.423 4430 start ReduceTask 8
+Jul 24 14:31:20.423 4430 will report ReduceTask finished 8
+Jul 24 14:31:20.425 ReduceTaskSolved 8
+Jul 24 14:31:20.839 AllocateReduceTask 9
+Jul 24 14:31:20.840 4363 start ReduceTask 9
+Jul 24 14:31:27.376 ReduceTask not finished 0
+Jul 24 14:31:27.413 AllocateReduceTask 0
+Jul 24 14:31:27.414 4413 start ReduceTask 0
+Jul 24 14:31:29.388 ReduceTask not finished 5
+Jul 24 14:31:29.633 4363 will report ReduceTask finished 9
+Jul 24 14:31:29.635 ReduceTaskSolved 9
+Jul 24 14:31:30.440 AllocateReduceTask 5
+Jul 24 14:31:30.441 4430 start ReduceTask 5
+Jul 24 14:31:31.471 Make a Worker 4448
+Jul 24 14:31:33.817 4413 will report ReduceTask finished 0
+Jul 24 14:31:33.819 ReduceTaskSolved 0
+Jul 24 14:31:40.441 ReduceTask not finished 5
+Jul 24 14:31:40.456 AllocateReduceTask 5
+Jul 24 14:31:40.457 4438 start ReduceTask 5
+Jul 24 14:31:48.870 4438 will report ReduceTask finished 5
+Jul 24 14:31:48.872 ReduceTaskSolved 5
 --- crash test: PASS
 *** PASSED ALL TESTS
