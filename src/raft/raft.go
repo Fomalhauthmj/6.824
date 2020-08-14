@@ -19,6 +19,7 @@ package raft
 
 import (
 	"math/rand"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -57,7 +58,7 @@ const (
 	Follower  = "Follower"
 	Candidate = "Candidate"
 	Leader    = "Leader"
-	AETime    = 500
+	AETime    = 100
 )
 
 type Raft struct {
@@ -87,6 +88,8 @@ type Raft struct {
 	voteCount     int
 	applyCh       chan ApplyMsg
 	applyCond     *sync.Cond
+	//for better performance
+	Reachable []bool
 }
 
 // return currentTerm and whether this server
@@ -102,7 +105,7 @@ func (rf *Raft) GetState() (int, bool) {
 	} else {
 		isleader = false
 	}
-	DPrintf("[%v] GetState %v %v", rf.me, term, isleader)
+	//DPrintf("[%v] GetState %v %v", rf.me, term, isleader)
 	rf.mu.Unlock()
 	return term, isleader
 }
@@ -174,6 +177,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
 	reply.VoteGranted = false
 	rf.mu.Lock()
+	rf.Reachable[args.CandidateId] = true
 	//valid request
 	if args.Term >= rf.currentTerm {
 		DPrintf("[%v] receive NEW RequestVote from [%v] at term %v", rf.me, args.CandidateId, args.Term)
@@ -222,9 +226,10 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	reply.Success = false
 	rf.mu.Lock()
 	//valid request
+	rf.Reachable[args.LeaderId] = true
 	if args.Term >= rf.currentTerm {
 		DPrintf("[%v] receive NEW AppendEntries from [%v] at term %v", rf.me, args.LeaderId, args.Term)
-		if args.Term > rf.currentTerm {
+		if args.Term > rf.currentTerm || rf.role == Candidate {
 			rf.ConvertToFollower(args.Term)
 		}
 		//restart election timer
@@ -250,7 +255,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 					rf.log = append(rf.log, args.Entries[minLen:]...)
 				}
 				reply.Success = true
-				DPrintf("[%v] log : %v", rf.me, rf.log)
+				DPrintf("[%v] loglen : %v", rf.me, len(rf.log))
 				if args.LeaderCommit > rf.commitIndex {
 					rf.commitIndex = Min(args.LeaderCommit, args.PrevLogIndex+len(args.Entries))
 					DPrintf("Follower[%v] new commitIndex: %v", rf.me, rf.commitIndex)
@@ -329,7 +334,6 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	if rf.role == Leader {
-		DPrintf("[%v] Start %v", rf.me, command)
 		rf.log = append(rf.log, LogEntry{
 			Command:      command,
 			ReceivedTerm: rf.currentTerm,
@@ -337,7 +341,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		index = len(rf.log)
 		term = rf.currentTerm
 		isLeader = true
-		DPrintf("[%v] log : %v", rf.me, rf.log)
+		DPrintf("Leader[%v] loglen : %v", rf.me, len(rf.log))
 	}
 	return index, term, isLeader
 }
@@ -387,6 +391,10 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.lastApplied = 0
 	rf.lastHeardTime = time.Now()
 	rf.applyCond = sync.NewCond(&rf.mu)
+	rf.Reachable = make([]bool, len(rf.peers))
+	for idx, _ := range rf.Reachable {
+		rf.Reachable[idx] = true
+	}
 	rf.ConvertToFollower(0)
 	go rf.ElectionTimer()
 	go rf.ApplyChan()
@@ -439,7 +447,7 @@ func (rf *Raft) AE() {
 				if idx == rf.me {
 					continue
 				}
-				if len(rf.log) >= rf.nextIndex[idx] {
+				if rf.Reachable[idx] && len(rf.log) >= rf.nextIndex[idx] {
 					go rf.Agreement(idx)
 				} else {
 					go rf.Heartbeat(idx)
@@ -537,14 +545,15 @@ func (rf *Raft) Agreement(server int) {
 	}
 	args.Entries = make([]LogEntry, len(rf.log[prevLogIndex:]))
 	copy(args.Entries, rf.log[prevLogIndex:])
-	DPrintf("[%v] send AppendEntries to [%v] %v", rf.me, server, args)
+	DPrintf("[%v] send AppendEntries to [%v] %v", rf.me, server, DebugArgs(args))
 	rf.mu.Unlock()
 
 	reply := &AppendEntriesReply{}
 	ok := rf.sendAppendEntries(server, args, reply)
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	if ok {
-		rf.mu.Lock()
-		defer rf.mu.Unlock()
+		rf.Reachable[server] = true
 		if reply.Term > rf.currentTerm {
 			rf.ConvertToFollower(reply.Term)
 			return
@@ -553,32 +562,14 @@ func (rf *Raft) Agreement(server int) {
 			if reply.Success {
 				rf.matchIndex[server] = args.PrevLogIndex + len(args.Entries)
 				rf.nextIndex[server] = rf.matchIndex[server] + 1
-
-				N := rf.commitIndex + 1
-				for N <= len(rf.log) {
-					matchCount := 0
-					for idx, val := range rf.matchIndex {
-						if idx == rf.me || val >= N {
-							matchCount++
-						}
-					}
-					DPrintf("[%v] N: %v %v/%v", rf.me, N, matchCount, len(rf.peers))
-					if matchCount > len(rf.peers)/2 {
-						if rf.log[N-1].ReceivedTerm == rf.currentTerm {
-							rf.commitIndex = N
-							DPrintf("Leader[%v] new commitIndex: %v", rf.me, rf.commitIndex)
-							rf.applyCond.Broadcast()
-						}
-						N++
-					} else {
-						break
-					}
-				}
+				rf.MajorityCommit(rf.matchIndex[server])
 			}
 			if reply.XTerm > 0 || reply.XLen > 0 {
 				rf.QuickRollBack(server, reply.XTerm, reply.XIndex, reply.XLen)
 			}
 		}
+	} else {
+		rf.Reachable[server] = false
 	}
 }
 
@@ -588,57 +579,36 @@ func (rf *Raft) Heartbeat(server int) {
 		rf.mu.Unlock()
 		return
 	}
+	prevLogIndex := rf.nextIndex[server] - 1
 	args := &AppendEntriesArgs{
 		Term:         rf.currentTerm,
 		LeaderId:     rf.me,
-		PrevLogIndex: len(rf.log),
+		PrevLogIndex: prevLogIndex,
 		LeaderCommit: rf.commitIndex,
 	}
-	if args.PrevLogIndex > 0 {
-		args.PrevLogTerm = rf.log[args.PrevLogIndex-1].ReceivedTerm
+	if prevLogIndex > 0 {
+		args.PrevLogTerm = rf.log[prevLogIndex-1].ReceivedTerm
 	}
-	DPrintf("[%v] send heartbeat to [%v] %v", rf.me, server, args)
+	DPrintf("[%v] send heartbeat to [%v] %v", rf.me, server, DebugArgs(args))
 	rf.mu.Unlock()
 
 	reply := &AppendEntriesReply{}
 	ok := rf.sendAppendEntries(server, args, reply)
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	if ok {
-		rf.mu.Lock()
-		defer rf.mu.Unlock()
+		rf.Reachable[server] = true
 		if reply.Term > rf.currentTerm {
 			rf.ConvertToFollower(reply.Term)
 			return
 		}
 		if args.Term == rf.currentTerm {
-			if reply.Success {
-				rf.matchIndex[server] = args.PrevLogIndex + len(args.Entries)
-				rf.nextIndex[server] = rf.matchIndex[server] + 1
-
-				N := rf.commitIndex + 1
-				for N <= len(rf.log) {
-					matchCount := 0
-					for idx, val := range rf.matchIndex {
-						if idx == rf.me || val >= N {
-							matchCount++
-						}
-					}
-					DPrintf("[%v] N: %v %v/%v", rf.me, N, matchCount, len(rf.peers))
-					if matchCount > len(rf.peers)/2 {
-						if rf.log[N-1].ReceivedTerm == rf.currentTerm {
-							rf.commitIndex = N
-							DPrintf("Leader[%v] new commitIndex: %v", rf.me, rf.commitIndex)
-							rf.applyCond.Broadcast()
-						}
-						N++
-					} else {
-						break
-					}
-				}
-			}
 			if reply.XTerm > 0 || reply.XLen > 0 {
 				rf.QuickRollBack(server, reply.XTerm, reply.XIndex, reply.XLen)
 			}
 		}
+	} else {
+		rf.Reachable[server] = false
 	}
 }
 func (rf *Raft) Up_to_date(argsTerm, argsIndex int) bool {
@@ -682,6 +652,7 @@ func (rf *Raft) FindTerm(term int) bool {
 }
 
 func (rf *Raft) QuickRollBack(server, XTerm, XIndex, XLen int) {
+	DPrintf("[%v] QuickRollBack", server)
 	if XTerm > 0 {
 		if !rf.FindTerm(XTerm) {
 			rf.nextIndex[server] = XIndex
@@ -692,6 +663,28 @@ func (rf *Raft) QuickRollBack(server, XTerm, XIndex, XLen int) {
 		rf.nextIndex[server] = XLen
 	}
 }
+
+func (rf *Raft) MajorityCommit(N int) {
+	if rf.log[N-1].ReceivedTerm != rf.currentTerm {
+		return
+	}
+	matchCount := 0
+	for idx, val := range rf.matchIndex {
+		if idx == rf.me || val >= N {
+			matchCount++
+		}
+	}
+	DPrintf("[%v] N: %v %v/%v", rf.me, N, matchCount, len(rf.peers))
+	if matchCount > len(rf.peers)/2 {
+		rf.commitIndex = N
+		DPrintf("Leader[%v] new commitIndex: %v", rf.me, rf.commitIndex)
+		rf.applyCond.Broadcast()
+	}
+}
+func DebugArgs(args *AppendEntriesArgs) string {
+	return strconv.Itoa(args.Term) + " " + strconv.Itoa(args.PrevLogIndex) + " " + strconv.Itoa(args.PrevLogTerm) + " " + strconv.Itoa(len(args.Entries)) + " " + strconv.Itoa(args.LeaderCommit)
+}
+
 func Min(x, y int) int {
 	if x < y {
 		return x
@@ -701,5 +694,5 @@ func Min(x, y int) int {
 }
 
 func RandomTime() time.Duration {
-	return time.Duration(AETime+rand.Intn(20)*5) * time.Millisecond
+	return time.Duration(AETime+rand.Intn(20)*10) * time.Millisecond
 }
