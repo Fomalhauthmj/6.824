@@ -389,7 +389,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// Your initialization code here (2A, 2B, 2C).
 
-	rf.ElectionTime = 800
+	rf.ElectionTime = 500
 	rf.HeartbeatTime = 100
 
 	rf.commitIndex = 0
