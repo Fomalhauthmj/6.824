@@ -58,7 +58,6 @@ const (
 	Follower  = "Follower"
 	Candidate = "Candidate"
 	Leader    = "Leader"
-	AETime    = 100
 )
 
 type Raft struct {
@@ -89,7 +88,9 @@ type Raft struct {
 	applyCh       chan ApplyMsg
 	applyCond     *sync.Cond
 	//for better performance
-	Reachable []bool
+	Reachable     []bool
+	ElectionTime  int
+	HeartbeatTime int
 }
 
 // return currentTerm and whether this server
@@ -387,14 +388,15 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.applyCh = applyCh
 
 	// Your initialization code here (2A, 2B, 2C).
+
+	rf.ElectionTime = 800
+	rf.HeartbeatTime = 100
+
 	rf.commitIndex = 0
 	rf.lastApplied = 0
 	rf.lastHeardTime = time.Now()
 	rf.applyCond = sync.NewCond(&rf.mu)
 	rf.Reachable = make([]bool, len(rf.peers))
-	for idx, _ := range rf.Reachable {
-		rf.Reachable[idx] = true
-	}
 	rf.ConvertToFollower(0)
 	go rf.ElectionTimer()
 	go rf.ApplyChan()
@@ -455,7 +457,7 @@ func (rf *Raft) AE() {
 			}
 		}
 		rf.mu.Unlock()
-		time.Sleep(time.Duration(AETime) * time.Millisecond)
+		time.Sleep(time.Duration(rf.HeartbeatTime) * time.Millisecond)
 	}
 }
 
@@ -467,7 +469,7 @@ func (rf *Raft) Election(args *RequestVoteArgs) {
 		}
 		go func(server int, args *RequestVoteArgs) {
 			rf.mu.Lock()
-			if rf.role != Candidate {
+			if rf.role != Candidate || rf.currentTerm != args.Term {
 				rf.mu.Unlock()
 				return
 			}
@@ -495,7 +497,7 @@ func (rf *Raft) Election(args *RequestVoteArgs) {
 }
 
 func (rf *Raft) ElectionTimer() {
-	electionTime := RandomTime()
+	electionTime := rf.RandomTime()
 	for !rf.killed() {
 		time.Sleep(electionTime)
 		rf.mu.Lock()
@@ -504,7 +506,7 @@ func (rf *Raft) ElectionTimer() {
 			if duration >= electionTime {
 				DPrintf("[%v] election timeout, start election", rf.me)
 				rf.ConvertToCandidate()
-				electionTime = RandomTime()
+				electionTime = rf.RandomTime()
 			}
 		}
 		rf.mu.Unlock()
@@ -543,8 +545,9 @@ func (rf *Raft) Agreement(server int) {
 	if prevLogIndex > 0 {
 		args.PrevLogTerm = rf.log[prevLogIndex-1].ReceivedTerm
 	}
-	args.Entries = make([]LogEntry, len(rf.log[prevLogIndex:]))
-	copy(args.Entries, rf.log[prevLogIndex:])
+	EntriesLen := Min(len(rf.log[prevLogIndex:]), 10)
+	args.Entries = make([]LogEntry, EntriesLen)
+	copy(args.Entries, rf.log[prevLogIndex:(prevLogIndex+EntriesLen)])
 	DPrintf("[%v] send AppendEntries to [%v] %v", rf.me, server, DebugArgs(args))
 	rf.mu.Unlock()
 
@@ -652,7 +655,7 @@ func (rf *Raft) FindTerm(term int) bool {
 }
 
 func (rf *Raft) QuickRollBack(server, XTerm, XIndex, XLen int) {
-	DPrintf("[%v] QuickRollBack", server)
+	DPrintf("[%v] QuickRollBack before: %v", server, rf.nextIndex[server])
 	if XTerm > 0 {
 		if !rf.FindTerm(XTerm) {
 			rf.nextIndex[server] = XIndex
@@ -662,6 +665,7 @@ func (rf *Raft) QuickRollBack(server, XTerm, XIndex, XLen int) {
 	} else {
 		rf.nextIndex[server] = XLen
 	}
+	DPrintf("[%v] QuickRollBack after: %v", server, rf.nextIndex[server])
 }
 
 func (rf *Raft) MajorityCommit(N int) {
@@ -681,6 +685,7 @@ func (rf *Raft) MajorityCommit(N int) {
 		rf.applyCond.Broadcast()
 	}
 }
+
 func DebugArgs(args *AppendEntriesArgs) string {
 	return strconv.Itoa(args.Term) + " " + strconv.Itoa(args.PrevLogIndex) + " " + strconv.Itoa(args.PrevLogTerm) + " " + strconv.Itoa(len(args.Entries)) + " " + strconv.Itoa(args.LeaderCommit)
 }
@@ -693,6 +698,6 @@ func Min(x, y int) int {
 	}
 }
 
-func RandomTime() time.Duration {
-	return time.Duration(AETime+rand.Intn(20)*10) * time.Millisecond
+func (rf *Raft) RandomTime() time.Duration {
+	return time.Duration(rf.ElectionTime+rand.Intn(20)*10) * time.Millisecond
 }
