@@ -99,14 +99,13 @@ func (rf *Raft) GetState() (int, bool) {
 	var isleader bool
 	// Your code here (2A).
 	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	term = rf.currentTerm
 	if rf.role == Leader {
 		isleader = true
 	} else {
 		isleader = false
 	}
-	//DPrintf("[%v] GetState %v %v", rf.me, term, isleader)
-	rf.mu.Unlock()
 	return term, isleader
 }
 
@@ -198,6 +197,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	// Your code here (2A, 2B).
 	reply.VoteGranted = false
 	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	rf.Reachable[args.CandidateId] = true
 	//valid request
 	if args.Term >= rf.currentTerm {
@@ -221,7 +221,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		DPrintf("[%v] receive STALE RequestVote from [%v] at term %v", rf.me, args.CandidateId, args.Term)
 	}
 	reply.Term = rf.currentTerm
-	rf.mu.Unlock()
 }
 
 //
@@ -249,6 +248,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	reply.Success = false
 	reply.XValid = false
 	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	//valid request
 	rf.Reachable[args.LeaderId] = true
 	if args.Term >= rf.currentTerm {
@@ -256,7 +256,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		if args.Term > rf.currentTerm || rf.role == Candidate {
 			rf.ConvertToFollower(args.Term, true)
 		}
-		DPrintf("[%v] update lastHeardTime", rf.me)
 		//restart election timer
 		rf.lastHeardTime = time.Now()
 		//heartbeat or AppendEntries
@@ -285,9 +284,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 					rf.persist()
 				}
 				reply.Success = true
-				if len(rf.log) > 0 {
-					DPrintf("Follower[%v] LogLen: %v Last LogEntry: %v", rf.me, len(rf.log), rf.log[len(rf.log)-1])
-				}
 				if args.LeaderCommit > rf.commitIndex {
 					rf.commitIndex = Min(args.LeaderCommit, args.PrevLogIndex+len(args.Entries))
 					DPrintf("Follower[%v] new commitIndex: %v", rf.me, rf.commitIndex)
@@ -298,15 +294,11 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			DPrintf("[%v] Too Short!(%v)", rf.me, len(rf.log))
 			reply.XValid = true
 			reply.XLen = len(rf.log)
-			if len(rf.log) > 0 {
-				DPrintf("Follower[%v] LogLen: %v Last LogEntry: %v", rf.me, len(rf.log), rf.log[len(rf.log)-1])
-			}
 		}
 	} else {
 		DPrintf("[%v] receive STALE AppendEntries from [%v] at term %v", rf.me, args.LeaderId, args.Term)
 	}
 	reply.Term = rf.currentTerm
-	rf.mu.Unlock()
 }
 
 //
@@ -378,11 +370,8 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 		index = len(rf.log)
 		term = rf.currentTerm
 		isLeader = true
-		if len(rf.log) > 0 {
-			DPrintf("Leader[%v] LogLen: %v Last LogEntry: %v", rf.me, len(rf.log), rf.log[len(rf.log)-1])
-		}
+		rf.persist()
 	}
-	rf.persist()
 	return index, term, isLeader
 }
 
@@ -494,9 +483,9 @@ func (rf *Raft) AE() {
 					continue
 				}
 				if rf.Reachable[idx] && len(rf.log) >= rf.nextIndex[idx] {
-					go rf.Agreement(idx)
+					go rf.Agreement(idx, false)
 				} else {
-					go rf.Heartbeat(idx)
+					go rf.Agreement(idx, true)
 				}
 			}
 		}
@@ -507,6 +496,7 @@ func (rf *Raft) AE() {
 
 func (rf *Raft) Election(args *RequestVoteArgs) {
 	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	for idx, _ := range rf.peers {
 		if idx == rf.me {
 			continue
@@ -520,9 +510,10 @@ func (rf *Raft) Election(args *RequestVoteArgs) {
 			rf.mu.Unlock()
 			reply := &RequestVoteReply{}
 			ok := rf.sendRequestVote(server, args, reply)
+			rf.mu.Lock()
+			defer rf.mu.Unlock()
 			if ok {
-				rf.mu.Lock()
-				defer rf.mu.Unlock()
+				rf.Reachable[server] = true
 				if reply.Term > rf.currentTerm {
 					rf.ConvertToFollower(reply.Term, true)
 					return
@@ -534,10 +525,11 @@ func (rf *Raft) Election(args *RequestVoteArgs) {
 						rf.ConvertToLeader()
 					}
 				}
+			} else {
+				rf.Reachable[server] = false
 			}
 		}(idx, args)
 	}
-	rf.mu.Unlock()
 }
 
 func (rf *Raft) ElectionTimer() {
@@ -574,7 +566,7 @@ func (rf *Raft) ApplyChan() {
 	}
 }
 
-func (rf *Raft) Agreement(server int) {
+func (rf *Raft) Agreement(server int, heartbeat bool) {
 	rf.mu.Lock()
 	if rf.role != Leader {
 		rf.mu.Unlock()
@@ -590,9 +582,11 @@ func (rf *Raft) Agreement(server int) {
 	if prevLogIndex > 0 {
 		args.PrevLogTerm = rf.log[prevLogIndex-1].ReceivedTerm
 	}
-	EntriesLen := Min(len(rf.log[prevLogIndex:]), 100)
-	args.Entries = make([]LogEntry, EntriesLen)
-	copy(args.Entries, rf.log[prevLogIndex:(prevLogIndex+EntriesLen)])
+	if !heartbeat {
+		EntriesLen := Min(len(rf.log[prevLogIndex:]), 100)
+		args.Entries = make([]LogEntry, EntriesLen)
+		copy(args.Entries, rf.log[prevLogIndex:(prevLogIndex+EntriesLen)])
+	}
 	DPrintf("[%v] send AppendEntries to [%v] (%v)", rf.me, server, DebugArgs(args))
 	rf.mu.Unlock()
 
@@ -607,50 +601,11 @@ func (rf *Raft) Agreement(server int) {
 			return
 		}
 		if args.Term == rf.currentTerm {
-			if reply.Success {
+			if reply.Success && len(args.Entries) > 0 {
 				rf.matchIndex[server] = args.PrevLogIndex + len(args.Entries)
 				rf.nextIndex[server] = rf.matchIndex[server] + 1
 				rf.MajorityCommit(rf.matchIndex[server])
 			}
-			if reply.XValid {
-				rf.QuickRollBack(server, reply.XTerm, reply.XIndex, reply.XLen)
-			}
-		}
-	} else {
-		rf.Reachable[server] = false
-	}
-}
-
-func (rf *Raft) Heartbeat(server int) {
-	rf.mu.Lock()
-	if rf.role != Leader {
-		rf.mu.Unlock()
-		return
-	}
-	prevLogIndex := rf.nextIndex[server] - 1
-	args := &AppendEntriesArgs{
-		Term:         rf.currentTerm,
-		LeaderId:     rf.me,
-		PrevLogIndex: prevLogIndex,
-		LeaderCommit: rf.commitIndex,
-	}
-	if prevLogIndex > 0 {
-		args.PrevLogTerm = rf.log[prevLogIndex-1].ReceivedTerm
-	}
-	DPrintf("[%v] send heartbeat to [%v] (%v)", rf.me, server, DebugArgs(args))
-	rf.mu.Unlock()
-
-	reply := &AppendEntriesReply{}
-	ok := rf.sendAppendEntries(server, args, reply)
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
-	if ok {
-		rf.Reachable[server] = true
-		if reply.Term > rf.currentTerm {
-			rf.ConvertToFollower(reply.Term, true)
-			return
-		}
-		if args.Term == rf.currentTerm {
 			if reply.XValid {
 				rf.QuickRollBack(server, reply.XTerm, reply.XIndex, reply.XLen)
 			}
