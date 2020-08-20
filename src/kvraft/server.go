@@ -26,10 +26,11 @@ type Op struct {
 	// Your definitions here.
 	// Field names must start with capital letters,
 	// otherwise RPC will break.
-	OpId   int64
-	OpName string
-	Key    string
-	Value  string
+	ClerkId int64
+	OpId    int
+	OpName  string
+	Key     string
+	Value   string
 }
 type Reply struct {
 }
@@ -43,81 +44,123 @@ type KVServer struct {
 	maxraftstate int // snapshot if log grows this big
 
 	// Your definitions here.
-	database map[string]string
-	requests map[int64]string
-	applyMsg raft.ApplyMsg
-
-	receiveFinishCond   *sync.Cond
-	receiveStartCond    *sync.Cond
-	receiveNextApplyMsg bool
-	waitReply           int
-	applyErr            Err
+	database      map[string]string
+	savedErr      map[int64]map[int]Err
+	savedValue    map[int64]map[int]string
+	clerkMaxOpId  map[int64]int
+	appliedOpTerm map[int]int
+	isLeader      bool
 }
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
-	DPrintf("[%v] Get", kv.me)
 	op := Op{
-		OpId:   args.Id,
-		OpName: "Get",
-		Key:    args.Key,
+		ClerkId: args.ClerkId,
+		OpId:    args.OpId,
+		OpName:  "Get",
+		Key:     args.Key,
 	}
-	index, _, isLeader := kv.rf.Start(op)
+	kv.mu.Lock()
+	if kv.DuplicateOp(&op) {
+		reply.Err = kv.GetSavedErr(&op)
+		if reply.Err != ErrNoKey {
+			reply.Value = kv.GetSavedValue(&op)
+		}
+		kv.mu.Unlock()
+		return
+	}
+	kv.mu.Unlock()
+
+	index, term, isLeader := kv.rf.Start(op)
+	reply.Err = ErrWrongLeader
 	if isLeader {
-		kv.receiveFinishCond.L.Lock()
-		kv.waitReply++
-		for kv.applyMsg.CommandIndex < index {
-			kv.receiveFinishCond.Wait()
+		kv.mu.Lock()
+		kv.isLeader = true
+		kv.mu.Unlock()
+
+		waitCount := 0
+		waitLimit := 20
+		for !kv.killed() {
+			kv.mu.Lock()
+			if !kv.isLeader {
+				kv.mu.Unlock()
+				return
+			}
+
+			if kv.DuplicateOp(&op) {
+				if kv.SameOp(index, term) {
+					reply.Err = kv.GetSavedErr(&op)
+					if reply.Err != ErrNoKey {
+						reply.Value = kv.GetSavedValue(&op)
+					}
+				} else {
+					kv.isLeader = false
+				}
+				kv.mu.Unlock()
+				return
+			}
+			kv.mu.Unlock()
+
+			time.Sleep(10 * time.Millisecond)
+			waitCount++
+			if waitCount >= waitLimit {
+				return
+			}
 		}
-		if kv.applyMsg.Command.(Op).OpId == args.Id {
-			DPrintf("[%v] match applyMsg %v", kv.me, DebugMsg(kv.applyMsg))
-			reply.Err = kv.applyErr
-			reply.Value = kv.database[args.Key]
-		} else {
-			reply.Err = ErrWrongLeader
-		}
-		kv.receiveNextApplyMsg = true
-		kv.waitReply--
-		kv.receiveFinishCond.L.Unlock()
-		kv.receiveStartCond.Broadcast()
-	} else {
-		reply.Err = ErrWrongLeader
-		DPrintf("[%v] ErrWrongLeader", kv.me)
 	}
-	DPrintf("[%v] Get reply", kv.me)
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	// Your code here.
-	DPrintf("[%v] PutAppend", kv.me)
 	op := Op{
-		OpId:   args.Id,
-		OpName: args.Op,
-		Key:    args.Key,
-		Value:  args.Value,
+		ClerkId: args.ClerkId,
+		OpId:    args.OpId,
+		OpName:  args.Op,
+		Key:     args.Key,
+		Value:   args.Value,
 	}
-	index, _, isLeader := kv.rf.Start(op)
+	kv.mu.Lock()
+	if kv.DuplicateOp(&op) {
+		reply.Err = kv.GetSavedErr(&op)
+		kv.mu.Unlock()
+		return
+	}
+	kv.mu.Unlock()
+
+	index, term, isLeader := kv.rf.Start(op)
+	reply.Err = ErrWrongLeader
 	if isLeader {
-		kv.receiveFinishCond.L.Lock()
-		kv.waitReply++
-		for kv.applyMsg.CommandIndex < index {
-			kv.receiveFinishCond.Wait()
+		kv.mu.Lock()
+		kv.isLeader = true
+		kv.mu.Unlock()
+
+		waitCount := 0
+		waitLimit := 20
+		for !kv.killed() {
+			kv.mu.Lock()
+			if !kv.isLeader {
+				kv.mu.Unlock()
+				return
+			}
+
+			if kv.DuplicateOp(&op) {
+				if kv.SameOp(index, term) {
+					reply.Err = kv.GetSavedErr(&op)
+				} else {
+					kv.isLeader = false
+				}
+				kv.mu.Unlock()
+				return
+			}
+			kv.mu.Unlock()
+
+			time.Sleep(10 * time.Millisecond)
+			waitCount++
+			if waitCount >= waitLimit {
+				return
+			}
 		}
-		if kv.applyMsg.Command.(Op).OpId == args.Id {
-			DPrintf("[%v] match applyMsg %v", kv.me, DebugMsg(kv.applyMsg))
-			reply.Err = kv.applyErr
-		} else {
-			reply.Err = ErrWrongLeader
-		}
-		kv.receiveNextApplyMsg = true
-		kv.waitReply--
-		kv.receiveFinishCond.L.Unlock()
-		kv.receiveStartCond.Broadcast()
-	} else {
-		reply.Err = ErrWrongLeader
-		DPrintf("[%v] ErrWrongLeader", kv.me)
 	}
-	DPrintf("[%v] PutAppend reply", kv.me)
 }
 
 //
@@ -165,16 +208,14 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.maxraftstate = maxraftstate
 
 	// You may need initialization code here.
-
 	kv.applyCh = make(chan raft.ApplyMsg)
-	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 	kv.database = make(map[string]string)
-	kv.requests = make(map[int64]bool)
-	kv.mu = sync.Mutex{}
-	kv.receiveStartCond = sync.NewCond(&kv.mu)
-	kv.receiveFinishCond = sync.NewCond(&kv.mu)
-	kv.waitReply = 0
-	kv.receiveNextApplyMsg = true
+	kv.savedErr = make(map[int64]map[int]Err)
+	kv.savedValue = make(map[int64]map[int]string)
+	kv.clerkMaxOpId = make(map[int64]int)
+	kv.appliedOpTerm = make(map[int]int)
+	kv.isLeader = false
+	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 	go kv.ReceiveApplyMsg()
 	// You may need initialization code here.
 	return kv
@@ -182,55 +223,92 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 
 func (kv *KVServer) ReceiveApplyMsg() {
 	for !kv.killed() {
-		kv.receiveStartCond.L.Lock()
-		if kv.waitReply == 0 {
-			kv.receiveNextApplyMsg = true
-		}
-		for !kv.receiveNextApplyMsg {
-			DPrintf("condition false continue wait")
-			kv.receiveStartCond.Wait()
-		}
-		kv.applyMsg = <-kv.applyCh
-		DPrintf("[%v] ReceiveApplyMsg %v", kv.me, DebugMsg(kv.applyMsg))
-		kv.applyErr = kv.Apply()
-		kv.receiveNextApplyMsg = false
-		kv.receiveStartCond.L.Unlock()
-		kv.receiveFinishCond.Broadcast()
-		time.Sleep(10 * time.Millisecond)
+		applyMsg := <-kv.applyCh
+		kv.mu.Lock()
+		kv.Apply(&applyMsg)
+		kv.mu.Unlock()
 	}
 }
-func (kv *KVServer) Apply() Err {
-	DPrintf("[%v] apply %v", kv.me, DebugMsg(kv.applyMsg))
-	if kv.applyMsg.CommandValid {
-		op := kv.applyMsg.Command.(Op)
-		_, exist := kv.requests[op.OpId]
-		if exist {
-			return ErrDuplicateRequest
-		} else {
-			kv.requests[op.OpId] = true
+
+func (kv *KVServer) DuplicateOp(op *Op) bool {
+	maxOpId, exist := kv.clerkMaxOpId[op.ClerkId]
+	if exist && maxOpId >= op.OpId {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (kv *KVServer) GetSavedValue(op *Op) string {
+	clerkTable := kv.savedValue[op.ClerkId]
+	savedValue := clerkTable[op.OpId]
+	return savedValue
+}
+
+func (kv *KVServer) SetSavedValue(op *Op, value string) {
+	kv.clerkMaxOpId[op.ClerkId] = op.OpId
+	clerkTable, exist := kv.savedValue[op.ClerkId]
+	if !exist {
+		kv.savedValue[op.ClerkId] = make(map[int]string)
+		clerkTable = kv.savedValue[op.ClerkId]
+	}
+	clerkTable[op.OpId] = value
+
+}
+
+func (kv *KVServer) GetSavedErr(op *Op) Err {
+	clerkTable := kv.savedErr[op.ClerkId]
+	savedErr := clerkTable[op.OpId]
+	return savedErr
+}
+
+func (kv *KVServer) SetSavedErr(op *Op, err Err) {
+	kv.clerkMaxOpId[op.ClerkId] = op.OpId
+	clerkTable, exist := kv.savedErr[op.ClerkId]
+	if !exist {
+		kv.savedErr[op.ClerkId] = make(map[int]Err)
+		clerkTable = kv.savedErr[op.ClerkId]
+	}
+	clerkTable[op.OpId] = err
+}
+
+func (kv *KVServer) SameOp(index, term int) bool {
+	return kv.appliedOpTerm[index] == term
+}
+
+func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
+	DPrintf("[%v] apply %v", kv.me, applyMsg.CommandIndex)
+	if applyMsg.CommandValid {
+		op := applyMsg.Command.(Op)
+		kv.appliedOpTerm[applyMsg.CommandIndex] = applyMsg.CommandTerm
+		if kv.DuplicateOp(&op) {
+			return
 		}
 		switch op.OpName {
 		case "Get":
-			_, ok := kv.database[op.Key]
+			value, ok := kv.database[op.Key]
 			if ok {
-				return OK
+				kv.SetSavedErr(&op, OK)
+				kv.SetSavedValue(&op, value)
 			} else {
-				return ErrNoKey
+				kv.SetSavedErr(&op, ErrNoKey)
 			}
 		case "Put":
 			kv.database[op.Key] = op.Value
-			return OK
+			kv.SetSavedErr(&op, OK)
 		case "Append":
 			kv.database[op.Key] += op.Value
-			return OK
+			kv.SetSavedErr(&op, OK)
 		}
 	}
-	return OK
 }
-func DebugMsg(msg raft.ApplyMsg) string {
-	result := "CommandValid: " + strconv.FormatBool(msg.CommandValid) + " CommandIndex: " + strconv.Itoa(msg.CommandIndex) + "\n"
-	op := msg.Command.(Op)
-	result += "OpName: " + op.OpName + "\n"
-	result += "Key: " + op.Key + " Value: " + op.Value
+
+func DebugMsg(msg *raft.ApplyMsg) string {
+	result := "CommandValid: " + strconv.FormatBool(msg.CommandValid) + " CommandIndex: " + strconv.Itoa(msg.CommandIndex)
+	switch msg.Command.(type) {
+	case Op:
+		op := msg.Command.(Op)
+		result += " OpName: " + op.OpName + " Key: " + op.Key + " Value: " + op.Value
+	}
 	return result
 }

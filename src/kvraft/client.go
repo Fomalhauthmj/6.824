@@ -10,8 +10,10 @@ import (
 type Clerk struct {
 	servers []*labrpc.ClientEnd
 	// You will have to modify this struct.
-	leader int
-	id     int64
+	leader     int
+	clerkId    int64
+	opId       int
+	reSendFlag bool
 }
 
 func nrand() int64 {
@@ -26,7 +28,9 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 	ck.servers = servers
 	// You'll have to add code here.
 	ck.leader = 0
-	ck.id = -1
+	ck.clerkId = nrand()
+	ck.opId = 0
+	ck.reSendFlag = false
 	return ck
 }
 
@@ -45,27 +49,30 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 func (ck *Clerk) Get(key string) string {
 	// You will have to modify this function.
 	args := GetArgs{
-		Key: key,
+		ClerkId: ck.clerkId,
+		Key:     key,
 	}
-	if ck.id == -1 {
-		ck.id = nrand()
+	if !ck.reSendFlag {
+		ck.opId++
 	}
-	args.Id = ck.id
+	args.OpId = ck.opId
 	reply := GetReply{}
 	ok := ck.servers[ck.leader].Call("KVServer.Get", &args, &reply)
 	if ok {
 		switch reply.Err {
 		case OK:
-			ck.id = -1
+			ck.reSendFlag = false
 			return reply.Value
 		case ErrNoKey:
-			ck.id = -1
+			ck.reSendFlag = false
 			return ""
 		case ErrWrongLeader:
+			ck.reSendFlag = true
 			ck.leader = (ck.leader + 1) % len(ck.servers)
 			return ck.Get(key)
 		}
 	} else {
+		ck.reSendFlag = true
 		ck.leader = (ck.leader + 1) % len(ck.servers)
 		return ck.Get(key)
 	}
@@ -85,25 +92,28 @@ func (ck *Clerk) Get(key string) string {
 func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
 	args := PutAppendArgs{
-		Key:   key,
-		Value: value,
-		Op:    op,
+		ClerkId: ck.clerkId,
+		Key:     key,
+		Value:   value,
+		Op:      op,
 	}
-	if ck.id == -1 {
-		ck.id = nrand()
+	if !ck.reSendFlag {
+		ck.opId++
 	}
-	args.Id = ck.id
+	args.OpId = ck.opId
 	reply := PutAppendReply{}
 	ok := ck.servers[ck.leader].Call("KVServer.PutAppend", &args, &reply)
 	if ok {
 		switch reply.Err {
 		case OK:
-			ck.id = -1
+			ck.reSendFlag = false
 		case ErrWrongLeader:
+			ck.reSendFlag = true
 			ck.leader = (ck.leader + 1) % len(ck.servers)
 			ck.PutAppend(key, value, op)
 		}
 	} else {
+		ck.reSendFlag = true
 		ck.leader = (ck.leader + 1) % len(ck.servers)
 		ck.PutAppend(key, value, op)
 	}
