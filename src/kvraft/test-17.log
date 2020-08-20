@@ -1,0 +1,57 @@
+=== RUN   TestBasic3A
+Test: one client (3A) ...
+  ... Passed --  15.3  5  5514  148
+--- PASS: TestBasic3A (15.35s)
+=== RUN   TestConcurrent3A
+Test: many clients (3A) ...
+  ... Passed --  16.6  5  8446  740
+--- PASS: TestConcurrent3A (16.55s)
+=== RUN   TestUnreliable3A
+Test: unreliable net, many clients (3A) ...
+  ... Passed --  17.4  5  2367  603
+--- PASS: TestUnreliable3A (17.36s)
+=== RUN   TestUnreliableOneKey3A
+Test: concurrent append to same key, unreliable (3A) ...
+  ... Passed --   1.9  3   152   52
+--- PASS: TestUnreliableOneKey3A (1.87s)
+=== RUN   TestOnePartition3A
+Test: progress in majority (3A) ...
+  ... Passed --   1.4  5   130    2
+Test: no progress in minority (3A) ...
+  ... Passed --   1.3  5   144    3
+Test: completion after heal (3A) ...
+  ... Passed --   1.1  5    59    3
+--- PASS: TestOnePartition3A (4.56s)
+=== RUN   TestManyPartitionsOneClient3A
+Test: partitions, one client (3A) ...
+  ... Passed --  22.6  5 26643  344
+--- PASS: TestManyPartitionsOneClient3A (22.57s)
+=== RUN   TestManyPartitionsManyClients3A
+Test: partitions, many clients (3A) ...
+  ... Passed --  23.1  5 22943 1154
+--- PASS: TestManyPartitionsManyClients3A (23.14s)
+=== RUN   TestPersistOneClient3A
+Test: restarts, one client (3A) ...
+  ... Passed --  20.1  5 21656  147
+--- PASS: TestPersistOneClient3A (20.14s)
+=== RUN   TestPersistConcurrent3A
+Test: restarts, many clients (3A) ...
+  ... Passed --  21.4  5 49186  740
+--- PASS: TestPersistConcurrent3A (21.41s)
+=== RUN   TestPersistConcurrentUnreliable3A
+Test: unreliable net, restarts, many clients (3A) ...
+  ... Passed --  22.4  5  3293  601
+--- PASS: TestPersistConcurrentUnreliable3A (22.36s)
+=== RUN   TestPersistPartition3A
+Test: restarts, partitions, many clients (3A) ...
+  ... Passed --  29.0  5 106416  772
+--- PASS: TestPersistPartition3A (28.97s)
+=== RUN   TestPersistPartitionUnreliable3A
+Test: unreliable net, restarts, partitions, many clients (3A) ...
+  ... Passed --  30.4  5  4314  446
+--- PASS: TestPersistPartitionUnreliable3A (30.42s)
+=== RUN   TestPersistPartitionUnreliableLinearizable3A
+Test: unreliable net, restarts, partitions, many clients, linearizability checks (3A) ...
+  ... Passed --  25.6  7 13736  554
+--- PASS: TestPersistPartitionUnreliableLinearizable3A (25.64s)
+PASS
