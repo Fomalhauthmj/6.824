@@ -44,6 +44,7 @@ type ApplyMsg struct {
 	CommandValid bool
 	Command      interface{}
 	CommandIndex int
+	CommandTerm  int
 }
 type LogEntry struct {
 	Command      interface{}
@@ -559,10 +560,11 @@ func (rf *Raft) ApplyChan() {
 			CommandValid: true,
 			Command:      rf.log[rf.lastApplied].Command,
 			CommandIndex: rf.lastApplied + 1,
+			CommandTerm:  rf.log[rf.lastApplied].ReceivedTerm,
 		}
 		rf.lastApplied++
-		rf.applyCh <- applyMsg
 		rf.applyCond.L.Unlock()
+		rf.applyCh <- applyMsg
 	}
 }
 
@@ -601,7 +603,7 @@ func (rf *Raft) Agreement(server int, heartbeat bool) {
 			return
 		}
 		if args.Term == rf.currentTerm {
-			if reply.Success && len(args.Entries) > 0 {
+			if reply.Success {
 				rf.matchIndex[server] = args.PrevLogIndex + len(args.Entries)
 				rf.nextIndex[server] = rf.matchIndex[server] + 1
 				rf.MajorityCommit(rf.matchIndex[server])
@@ -670,7 +672,7 @@ func (rf *Raft) QuickRollBack(server, XTerm, XIndex, XLen int) {
 }
 
 func (rf *Raft) MajorityCommit(N int) {
-	if rf.log[N-1].ReceivedTerm != rf.currentTerm {
+	if N > 0 && rf.log[N-1].ReceivedTerm != rf.currentTerm {
 		return
 	}
 	matchCount := 0
