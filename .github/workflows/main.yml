@@ -23,15 +23,23 @@ jobs:
     - uses: actions/checkout@v2
 
     # Runs a single command using the runners shell
-    - name: download and install golang
+    - name: Download and Install Go
       run: |
+        sudo rm /usr/local/go
         wget https://golang.org/dl/go$VERSION.$OS-$ARCH.tar.gz
         sudo tar -C /usr/local -xzf go$VERSION.$OS-$ARCH.tar.gz
         export PATH=$PATH:/usr/local/go/bin
         source $HOME/.profile
         go version
-        ls
+        ls -lah
+        echo ~
       env:
         VERSION: 1.13.6
         OS: linux
         ARCH: amd64
+    - name: "Lab 1: MapReduce"
+      run: |
+        cd src/main
+        sh test-mr.sh
+        
+        
