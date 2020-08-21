@@ -25,9 +25,13 @@ jobs:
     # Runs a single command using the runners shell
     - name: download and install golang
       run: |
-        wget https://golang.org/dl/go1.13.6.linux-amd64.tar.gz
-        sudo tar -C /usr/local -xzf go1.13.6.linux-amd64.tar.gz
+        wget https://golang.org/dl/go$VERSION.$OS-$ARCH.tar.gz
+        sudo tar -C /usr/local -xzf go$VERSION.$OS-$ARCH.tar.gz
         export PATH=$PATH:/usr/local/go/bin
         source $HOME/.profile
-        go env
-        lscpu
+        go version
+        ls
+      env:
+        VERSION: 1.13.6
+        OS: linux
+        ARCH: amd64
