@@ -40,16 +40,19 @@ jobs:
         cd ..
 
     - name: "Lab 2: Raft (Part 2B)"
+      run: |
         cd src/raft
         time go test -run 2B
         cd ..
 
     - name: "Lab 2: Raft (Part 2C)"
+      run: |
         cd src/raft
         time go test -run 2C
         cd ..
 
     - name: "Lab 3: KV Raft (Part 3A)"
+      run: |
         cd src/kvraft
         time go test -run 3A
         cd ..
