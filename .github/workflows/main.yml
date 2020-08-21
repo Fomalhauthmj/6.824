@@ -25,11 +25,8 @@ jobs:
     # Runs a single command using the runners shell
     - name: Download and Install Go
       run: |
-        sudo rm /usr/local/go
-        wget https://golang.org/dl/go$VERSION.$OS-$ARCH.tar.gz
-        sudo tar -C /usr/local -xzf go$VERSION.$OS-$ARCH.tar.gz
-        export PATH=$PATH:/usr/local/go/bin
-        source $HOME/.profile
+        ls /opt/hostedtoolcache/go
+        go env
         go version
         ls -lah
         echo ~
