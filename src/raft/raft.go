@@ -45,6 +45,7 @@ type ApplyMsg struct {
 	Command      interface{}
 	CommandIndex int
 	CommandTerm  int
+	Snapshot     []byte
 }
 type LogEntry struct {
 	Command      interface{}
@@ -691,6 +692,11 @@ func (rf *Raft) MajorityCommit(N int) {
 
 func (rf *Raft) RandomTime() time.Duration {
 	return time.Duration(rf.ElectionTime+rand.Intn(20)*10) * time.Millisecond
+}
+
+func (rf *Raft) Snapshot(snapshot interface{}) {
+	//TODO
+	rf.persister.SaveStateAndSnapshot(rf.persister.ReadRaftState(), snapshot.([]byte))
 }
 
 func DebugArgs(args *AppendEntriesArgs) string {
