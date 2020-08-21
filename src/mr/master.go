@@ -1,7 +1,6 @@
 package mr
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -18,6 +17,17 @@ const (
 	Mapping   = 3
 	Reducing  = 4
 )
+
+// Debugging
+const Debug = 0
+
+func DPrintf(format string, a ...interface{}) (n int, err error) {
+	log.SetFlags(log.Lmicroseconds)
+	if Debug > 0 {
+		log.Printf(format, a...)
+	}
+	return
+}
 
 type Master struct {
 	// Your definitions here.
@@ -47,7 +57,7 @@ func (m *Master) MapTaskSolved(tasknumber int) {
 	if flag {
 		m.jobState = Reducing
 	}
-	fmt.Printf("%v MapTaskSolved %v\n", time.Now().Format(time.StampMilli), tasknumber)
+	DPrintf("MapTaskSolved %v", tasknumber)
 }
 func (m *Master) ReduceTaskSolved(tasknumber int) {
 	defer m.reduceMutex.Unlock()
@@ -65,7 +75,7 @@ func (m *Master) ReduceTaskSolved(tasknumber int) {
 	if flag {
 		m.jobState = Finished
 	}
-	fmt.Printf("%v ReduceTaskSolved %v\n", time.Now().Format(time.StampMilli), tasknumber)
+	DPrintf("ReduceTaskSolved %v", tasknumber)
 }
 func (m *Master) AllocateMapTask() int {
 	defer m.mapMutex.Unlock()
@@ -73,7 +83,7 @@ func (m *Master) AllocateMapTask() int {
 	for i, file := range m.inputFiles {
 		if m.mapTable[file] == Unstarted {
 			m.mapTable[file] = Working
-			fmt.Printf("%v AllocateMapTask %v\n", time.Now().Format(time.StampMilli), i)
+			DPrintf("AllocateMapTask %v", i)
 			return i
 		}
 	}
@@ -85,7 +95,7 @@ func (m *Master) AllocateReduceTask() int {
 	for i := 0; i < m.nReduce; i++ {
 		if m.reduceTable[i] == Unstarted {
 			m.reduceTable[i] = Working
-			fmt.Printf("%v AllocateReduceTask %v\n", time.Now().Format(time.StampMilli), i)
+			DPrintf("AllocateReduceTask %v", i)
 			return i
 		}
 	}
@@ -97,7 +107,7 @@ func (m *Master) CheckMapTask(tasknumber int) {
 	m.mapMutex.Lock()
 	if m.mapTable[m.inputFiles[tasknumber]] == Working {
 		m.mapTable[m.inputFiles[tasknumber]] = Unstarted
-		fmt.Printf("%v MapTask not finished %v\n", time.Now().Format(time.StampMilli), tasknumber)
+		DPrintf("MapTask not finished %v", tasknumber)
 	}
 }
 func (m *Master) CheckReduceTask(tasknumber int) {
@@ -106,7 +116,7 @@ func (m *Master) CheckReduceTask(tasknumber int) {
 	m.reduceMutex.Lock()
 	if m.reduceTable[tasknumber] == Working {
 		m.reduceTable[tasknumber] = Unstarted
-		fmt.Printf("%v ReduceTask not finished %v\n", time.Now().Format(time.StampMilli), tasknumber)
+		DPrintf("ReduceTask not finished %v", tasknumber)
 	}
 }
 
@@ -201,7 +211,7 @@ func (m *Master) Done() bool {
 // nReduce is the number of reduce tasks to use.
 //
 func MakeMaster(files []string, nReduce int) *Master {
-	fmt.Printf("%v Make a Master %v\n", time.Now().Format(time.StampMilli), os.Getpid())
+	DPrintf("Make a Master %v", os.Getpid())
 	m := Master{}
 	m.nReduce = nReduce
 	m.inputFiles = files

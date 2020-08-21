@@ -45,7 +45,7 @@ func ihash(key string) int {
 var w RequestReply
 
 func MapTask(mapf func(string, string) []KeyValue) {
-	fmt.Printf("%v %v start MapTask %v\n", time.Now().Format(time.StampMilli), os.Getpid(), w.Filename)
+	DPrintf("%v start MapTask %v", os.Getpid(), w.Filename)
 	inputfile, err := os.Open(w.Filename)
 	if err != nil {
 		log.Fatalf("cannot open %v", w.Filename)
@@ -79,11 +79,11 @@ func MapTask(mapf func(string, string) []KeyValue) {
 	args.Info = Complete_Task
 	args.Taskkind = Map_Task
 	args.Tasknumber = w.Tasknumber
-	fmt.Printf("%v %v will report MapTask finished %v\n", time.Now().Format(time.StampMilli), os.Getpid(), w.Filename)
+	DPrintf("%v will report MapTask finished %v", os.Getpid(), w.Filename)
 	w = Call(&args)
 }
 func ReduceTask(reducef func(string, []string) string) {
-	fmt.Printf("%v %v start ReduceTask %v\n", time.Now().Format(time.StampMilli), os.Getpid(), w.Tasknumber)
+	DPrintf("%v start ReduceTask %v", os.Getpid(), w.Tasknumber)
 	decs := make([]*json.Decoder, w.Nmap)
 	for i := 0; i < w.Nmap; i++ {
 		inputfile, err := os.Open("mr-" + strconv.Itoa(i) + "-" + strconv.Itoa(w.Tasknumber))
@@ -132,12 +132,12 @@ func ReduceTask(reducef func(string, []string) string) {
 	args.Info = Complete_Task
 	args.Taskkind = Reduce_Task
 	args.Tasknumber = w.Tasknumber
-	fmt.Printf("%v %v will report ReduceTask finished %v\n", time.Now().Format(time.StampMilli), os.Getpid(), w.Tasknumber)
+	DPrintf("%v will report ReduceTask finished %v", os.Getpid(), w.Tasknumber)
 	w = Call(&args)
 }
 func Worker(mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
-	fmt.Printf("%v Make a Worker %v\n", time.Now().Format(time.StampMilli), os.Getpid())
+	DPrintf("Make a Worker %v", os.Getpid())
 	// Your worker implementation here.
 
 	// uncomment to send the Example RPC to the master.

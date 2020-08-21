@@ -22,21 +22,34 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
-    # Runs a single command using the runners shell
-    - name: Download and Install Go
-      run: |
-        ls /opt/hostedtoolcache/go
-        go env
-        go version
-        ls -lah
-        echo ~
-      env:
-        VERSION: 1.13.6
-        OS: linux
-        ARCH: amd64
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '^1.13.6' # The Go version to download (if necessary) and use.
+    - run: go version
+   
     - name: "Lab 1: MapReduce"
       run: |
         cd src/main
-        sh test-mr.sh
+        time sh ./test-mr.sh
+        cd ..
         
-        
+    - name: "Lab 2: Raft (Part 2A)"
+      run: |
+        cd src/raft
+        time go test -run 2A
+        cd ..
+
+    - name: "Lab 2: Raft (Part 2B)"
+        cd src/raft
+        time go test -run 2B
+        cd ..
+
+    - name: "Lab 2: Raft (Part 2C)"
+        cd src/raft
+        time go test -run 2C
+        cd ..
+
+    - name: "Lab 3: KV Raft (Part 3A)"
+        cd src/kvraft
+        time go test -run 3A
+        cd ..
