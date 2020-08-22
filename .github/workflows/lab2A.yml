@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Lab Test
+name: Lab2A
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -27,32 +27,12 @@ jobs:
         go-version: '1.13.6' # The Go version to download (if necessary) and use.
     - run: go version
    
-    - name: "Lab 1: MapReduce"
-      run: |
-        cd src/main
-        time sh ./test-mr.sh
-        cd ..
-        
     - name: "Lab 2: Raft (Part 2A)"
       run: |
         cd src/raft
         time go test -run 2A
-        cd ..
 
-    - name: "Lab 2: Raft (Part 2B)"
-      run: |
-        cd src/raft
-        time go test -run 2B
-        cd ..
+   
 
-    - name: "Lab 2: Raft (Part 2C)"
-      run: |
-        cd src/raft
-        time go test -run 2C
-        cd ..
-
-    - name: "Lab 3: KV Raft (Part 3A)"
-      run: |
-        cd src/kvraft
-        time go test -run 3A
-        cd ..
+   
+   
