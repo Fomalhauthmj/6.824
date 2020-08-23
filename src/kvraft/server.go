@@ -13,7 +13,7 @@ import (
 	"../raft"
 )
 
-const Debug = 0
+const Debug = 1
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	log.SetFlags(log.Lmicroseconds)
@@ -50,7 +50,8 @@ type KVServer struct {
 	clerkMaxOpId   map[int64]int
 	appliedOpTerm  int
 	appliedOpIndex int
-	isLeader       bool
+
+	isLeader bool
 }
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
@@ -263,10 +264,11 @@ func (kv *KVServer) SameOp(clerkId, term int) bool {
 }
 
 func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
-	DPrintf("[%v] apply %v", kv.me, applyMsg.CommandIndex)
-	kv.appliedOpTerm = applyMsg.CommandTerm
-	kv.appliedOpIndex = applyMsg.CommandIndex
 	if applyMsg.CommandValid {
+		DPrintf("[%v] apply %v", kv.me, applyMsg.CommandIndex)
+		kv.appliedOpTerm = applyMsg.CommandTerm
+		kv.appliedOpIndex = applyMsg.CommandIndex
+
 		op := applyMsg.Command.(Op)
 		if kv.DuplicateOp(&op) {
 			return
@@ -288,6 +290,7 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 			kv.SetSavedErr(&op, OK)
 		}
 	} else {
+		DPrintf("[%v] receive snapshot", kv.me)
 		kv.ReadSnapshot(applyMsg.Snapshot)
 	}
 }
@@ -297,14 +300,16 @@ func (kv *KVServer) DetectRaftState(persister *raft.Persister) {
 		return
 	}
 	for !kv.killed() {
-		if persister.RaftStateSize() >= kv.maxraftstate {
-			kv.rf.Snapshot(kv.MakeSnapshot())
+		raftStateSize := persister.RaftStateSize()
+		if raftStateSize >= kv.maxraftstate {
+			DPrintf("[%v] before SaveSnapshot:%v", kv.me, raftStateSize)
+			kv.rf.SaveSnapshot(kv.MakeSnapshot())
+			DPrintf("[%v] after SaveSnapshot:%v", kv.me, persister.RaftStateSize())
 		}
-		time.Sleep(10 * time.Millisecond)
 	}
 }
 
-func (kv *KVServer) MakeSnapshot() []byte {
+func (kv *KVServer) MakeSnapshot() (int, int, []byte) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	// Your code here (2C).
@@ -324,7 +329,7 @@ func (kv *KVServer) MakeSnapshot() []byte {
 	e.Encode(kv.appliedOpTerm)
 	e.Encode(kv.appliedOpIndex)
 	data := w.Bytes()
-	return data
+	return kv.appliedOpIndex, kv.appliedOpTerm, data
 }
 
 func (kv *KVServer) ReadSnapshot(data []byte) {
@@ -353,7 +358,7 @@ func (kv *KVServer) ReadSnapshot(data []byte) {
 	var appliedOpTerm int
 	var appliedOpIndex int
 	if d.Decode(&Database) != nil || d.Decode(&SavedErr) != nil || d.Decode(&SavedValue) != nil || d.Decode(&ClerkMaxOpId) != nil || d.Decode(&appliedOpTerm) != nil || d.Decode(&appliedOpIndex) != nil {
-		DPrintf("[%v]Snapshot Decode error", kv.me)
+		DPrintf("[%v] snapshot Decode error", kv.me)
 	} else {
 		kv.database = Database
 		kv.savedErr = SavedErr
@@ -361,7 +366,7 @@ func (kv *KVServer) ReadSnapshot(data []byte) {
 		kv.clerkMaxOpId = ClerkMaxOpId
 		kv.appliedOpTerm = appliedOpTerm
 		kv.appliedOpIndex = appliedOpIndex
-		DPrintf("[%v]restore from Snapshot success", kv.me)
+		DPrintf("[%v] restore from Snapshot success(appliedOpIndex:%v appliedOpTerm:%v)", kv.me, kv.appliedOpIndex, appliedOpTerm)
 	}
 }
 
