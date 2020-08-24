@@ -34,6 +34,8 @@ type Op struct {
 	Value   string
 }
 
+const WaitLimit = 30
+
 type KVServer struct {
 	mu      sync.Mutex
 	me      int
@@ -81,7 +83,6 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 		kv.mu.Unlock()
 
 		waitCount := 0
-		waitLimit := 20
 		for !kv.killed() {
 			kv.mu.Lock()
 			if !kv.isLeader {
@@ -105,7 +106,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 
 			time.Sleep(10 * time.Millisecond)
 			waitCount++
-			if waitCount >= waitLimit {
+			if waitCount >= WaitLimit {
 				return
 			}
 		}
@@ -137,7 +138,6 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		kv.mu.Unlock()
 
 		waitCount := 0
-		waitLimit := 20
 		for !kv.killed() {
 			kv.mu.Lock()
 			if !kv.isLeader {
@@ -158,7 +158,7 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 
 			time.Sleep(10 * time.Millisecond)
 			waitCount++
-			if waitCount >= waitLimit {
+			if waitCount >= WaitLimit {
 				return
 			}
 		}
@@ -217,6 +217,8 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.clerkMaxOpId = make(map[int64]int)
 	kv.isLeader = false
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
+
+	kv.ApplySnapshot(persister.ReadSnapshot())
 	go kv.ReceiveApplyMsg()
 	go kv.DetectRaftState(persister)
 	// You may need initialization code here.
@@ -268,7 +270,6 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 		DPrintf("[%v] apply %v", kv.me, applyMsg.CommandIndex)
 		kv.appliedOpTerm = applyMsg.CommandTerm
 		kv.appliedOpIndex = applyMsg.CommandIndex
-
 		op := applyMsg.Command.(Op)
 		if kv.DuplicateOp(&op) {
 			return
@@ -291,7 +292,7 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 		}
 	} else {
 		DPrintf("[%v] receive snapshot", kv.me)
-		kv.ReadSnapshot(applyMsg.Snapshot)
+		kv.ApplySnapshot(applyMsg.Snapshot)
 	}
 }
 
@@ -302,24 +303,15 @@ func (kv *KVServer) DetectRaftState(persister *raft.Persister) {
 	for !kv.killed() {
 		raftStateSize := persister.RaftStateSize()
 		if raftStateSize >= kv.maxraftstate {
-			DPrintf("[%v] before SaveSnapshot:%v", kv.me, raftStateSize)
 			kv.rf.SaveSnapshot(kv.MakeSnapshot())
-			DPrintf("[%v] after SaveSnapshot:%v", kv.me, persister.RaftStateSize())
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
 func (kv *KVServer) MakeSnapshot() (int, int, []byte) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	// Your code here (2C).
-	// Example:
-	// w := new(bytes.Buffer)
-	// e := labgob.NewEncoder(w)
-	// e.Encode(rf.xxx)
-	// e.Encode(rf.yyy)
-	// data := w.Bytes()
-	// rf.persister.SaveRaftState(data)
 	w := new(bytes.Buffer)
 	e := labgob.NewEncoder(w)
 	e.Encode(kv.database)
@@ -332,23 +324,10 @@ func (kv *KVServer) MakeSnapshot() (int, int, []byte) {
 	return kv.appliedOpIndex, kv.appliedOpTerm, data
 }
 
-func (kv *KVServer) ReadSnapshot(data []byte) {
+func (kv *KVServer) ApplySnapshot(data []byte) {
 	if data == nil || len(data) < 1 { // bootstrap without any state?
 		return
 	}
-	// Your code here (2C).
-	// Example:
-	// r := bytes.NewBuffer(data)
-	// d := labgob.NewDecoder(r)
-	// var xxx
-	// var yyy
-	// if d.Decode(&xxx) != nil ||
-	//    d.Decode(&yyy) != nil {
-	//   error...
-	// } else {
-	//   rf.xxx = xxx
-	//   rf.yyy = yyy
-	// }
 	r := bytes.NewBuffer(data)
 	d := labgob.NewDecoder(r)
 	var Database map[string]string

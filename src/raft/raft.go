@@ -249,19 +249,17 @@ type AppendEntriesArgs struct {
 }
 
 type AppendEntriesReply struct {
-	Term      int
-	Success   bool
-	XValid    bool
-	XTerm     int
-	XIndex    int
-	XLen      int
-	XSnapshot bool
+	Term    int
+	Success bool
+	XValid  bool
+	XTerm   int
+	XIndex  int
+	XLen    int
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	reply.Success = false
 	reply.XValid = false
-	reply.XSnapshot = false
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	//valid request
@@ -302,9 +300,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 					rf.applyCond.Broadcast()
 				}
 			}
-		} else if args.PrevLogIndex < rf.lastIncludedIndex {
-			reply.XSnapshot = true
-
 		} else if args.PrevLogIndex > rf.GetLastLogIndex() {
 			DPrintf("[%v] Too Short!(%v)", rf.me, rf.GetLastLogIndex())
 			reply.XValid = true
@@ -343,23 +338,24 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		if args.Term > rf.currentTerm {
 			rf.ConvertToFollower(args.Term, true)
 		}
+		DPrintf("[%v] before InstallSnapshot [%v,%v]", rf.me, rf.lastIncludedIndex+1, rf.GetLastLogIndex())
 		if rf.ContainIndex(args.LastIncludedIndex) && rf.GetLog(args.LastIncludedIndex).ReceivedTerm == args.LastIncludedTerm {
 			rf.DiscardLog(args.LastIncludedIndex, args.LastIncludedTerm)
-			reply.Success = true
 		} else {
 			rf.log = nil
 			rf.lastIncludedIndex = args.LastIncludedIndex
 			rf.lastIncludedTerm = args.LastIncludedTerm
-			rf.lastApplied = args.LastIncludedIndex
-			rf.commitIndex = args.LastIncludedIndex
-			rf.persist()
-			applyMsg := ApplyMsg{
-				CommandValid: false,
-				Snapshot:     args.Data,
-			}
-			rf.applyCh <- applyMsg
-			reply.Success = true
 		}
+		rf.lastApplied = args.LastIncludedIndex
+		rf.commitIndex = Max(args.LastIncludedIndex, rf.commitIndex)
+		rf.persist()
+		applyMsg := ApplyMsg{
+			CommandValid: false,
+			Snapshot:     args.Data,
+		}
+		rf.applyCh <- applyMsg
+		reply.Success = true
+		DPrintf("[%v] after InstallSnapshot [%v,%v]", rf.me, rf.lastIncludedIndex+1, rf.GetLastLogIndex())
 	} else {
 		DPrintf("[%v] receive STALE InstallSnapshot from [%v] at term %v", rf.me, args.LeaderId, args.Term)
 	}
@@ -558,6 +554,7 @@ func (rf *Raft) AE() {
 					continue
 				}
 				if rf.reachable[idx] && rf.GetLastLogIndex() >= rf.nextIndex[idx] {
+					rf.reachable[idx] = false
 					if rf.ContainIndex(rf.nextIndex[idx]) {
 						go rf.SendLog(idx, false)
 					} else {
@@ -629,21 +626,44 @@ func (rf *Raft) ElectionTimer() {
 }
 
 func (rf *Raft) ApplyChan() {
+	var applyMsg ApplyMsg
+	sendFlag := false
 	for !rf.killed() {
-		rf.applyCond.L.Lock()
-		for rf.commitIndex <= rf.lastApplied {
-			rf.applyCond.Wait()
+		/*
+			rf.applyCond.L.Lock()
+			for rf.commitIndex <= rf.lastApplied {
+				rf.applyCond.Wait()
+			}
+			rf.lastApplied++
+			DPrintf("[%v] willApplied:%v lastIncludedIndex:%v lastLogIndex:%v", rf.me, rf.lastApplied, rf.lastIncludedIndex, rf.GetLastLogIndex())
+			applyMsg := ApplyMsg{
+				CommandValid: true,
+				Command:      rf.GetLog(rf.lastApplied).Command,
+				CommandIndex: rf.lastApplied,
+				CommandTerm:  rf.GetLog(rf.lastApplied).ReceivedTerm,
+			}
+			rf.applyCond.L.Unlock()
+		*/
+		rf.mu.Lock()
+		if rf.commitIndex > rf.lastApplied {
+			rf.lastApplied++
+			DPrintf("[%v] willApplied:%v lastIncludedIndex:%v lastLogIndex:%v", rf.me, rf.lastApplied, rf.lastIncludedIndex, rf.GetLastLogIndex())
+			applyMsg = ApplyMsg{
+				CommandValid: true,
+				Command:      rf.GetLog(rf.lastApplied).Command,
+				CommandIndex: rf.lastApplied,
+				CommandTerm:  rf.GetLog(rf.lastApplied).ReceivedTerm,
+			}
+			sendFlag = true
+		} else {
+			sendFlag = false
 		}
-		DPrintf("[%v] lastApplied:%v lastIncludedIndex:%v lastLogIndex:%v", rf.me, rf.lastApplied, rf.lastIncludedIndex, rf.GetLastLogIndex())
-		rf.lastApplied++
-		applyMsg := ApplyMsg{
-			CommandValid: true,
-			Command:      rf.GetLog(rf.lastApplied).Command,
-			CommandIndex: rf.lastApplied,
-			CommandTerm:  rf.GetLog(rf.lastApplied).ReceivedTerm,
+		rf.mu.Unlock()
+		if sendFlag {
+			rf.applyCh <- applyMsg
+		} else {
+			time.Sleep(10 * time.Millisecond)
 		}
-		rf.applyCond.L.Unlock()
-		rf.applyCh <- applyMsg
 	}
 }
 
@@ -810,6 +830,7 @@ func (rf *Raft) RandomTime() time.Duration {
 }
 
 func (rf *Raft) DiscardLog(index, term int) {
+	DPrintf("[%v] before DiscardLog [%v,%v] index:%v term:%v", rf.me, rf.lastIncludedIndex+1, rf.GetLastLogIndex(), index, term)
 	rf.log = rf.log[rf.GetOffset(index+1):]
 	dest := make([]LogEntry, len(rf.log))
 	copy(dest, rf.log)
@@ -817,6 +838,8 @@ func (rf *Raft) DiscardLog(index, term int) {
 	rf.lastIncludedIndex = index
 	rf.lastIncludedTerm = term
 	rf.persist()
+	DPrintf("[%v] after DiscardLog [%v,%v] index:%v term:%v", rf.me, rf.lastIncludedIndex+1, rf.GetLastLogIndex(), index, term)
+
 }
 
 func (rf *Raft) GetLog(index int) *LogEntry {
@@ -840,5 +863,4 @@ func (rf *Raft) SaveSnapshot(index, term int, snapshot []byte) {
 	defer rf.mu.Unlock()
 	rf.DiscardLog(index, term)
 	rf.persister.SaveStateAndSnapshot(rf.persister.ReadRaftState(), snapshot)
-	DPrintf("[%v] SaveSnapshot index:%v term:%v", rf.me, index, term)
 }
