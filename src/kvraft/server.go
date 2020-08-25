@@ -13,7 +13,7 @@ import (
 	"../raft"
 )
 
-const Debug = 1
+const Debug = 0
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	log.SetFlags(log.Lmicroseconds)
@@ -75,11 +75,12 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	}
 	kv.mu.Unlock()
 
-	index, term, isLeader := kv.rf.Start(op)
+	_, term, isLeader := kv.rf.Start(op)
 	reply.Err = ErrWrongLeader
 	if isLeader {
 		kv.mu.Lock()
 		kv.isLeader = true
+		DPrintf("Leader[%v] Get args(%v)", kv.me, args)
 		kv.mu.Unlock()
 
 		waitCount := 0
@@ -91,11 +92,12 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 			}
 
 			if kv.DuplicateOp(&op) {
-				if kv.SameOp(index, term) {
+				if kv.SameOp(term) {
 					reply.Err = kv.GetSavedErr(&op)
 					if reply.Err != ErrNoKey {
 						reply.Value = kv.GetSavedValue(&op)
 					}
+					DPrintf("Leader[%v] Get reply(%v)", kv.me, reply)
 				} else {
 					kv.isLeader = false
 				}
@@ -130,11 +132,12 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	}
 	kv.mu.Unlock()
 
-	index, term, isLeader := kv.rf.Start(op)
+	_, term, isLeader := kv.rf.Start(op)
 	reply.Err = ErrWrongLeader
 	if isLeader {
 		kv.mu.Lock()
 		kv.isLeader = true
+		DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
 		kv.mu.Unlock()
 
 		waitCount := 0
@@ -146,8 +149,9 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 			}
 
 			if kv.DuplicateOp(&op) {
-				if kv.SameOp(index, term) {
+				if kv.SameOp(term) {
 					reply.Err = kv.GetSavedErr(&op)
+					DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
 				} else {
 					kv.isLeader = false
 				}
@@ -210,7 +214,7 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.maxraftstate = maxraftstate
 
 	// You may need initialization code here.
-	kv.applyCh = make(chan raft.ApplyMsg)
+	kv.applyCh = make(chan raft.ApplyMsg, 16)
 	kv.database = make(map[string]string)
 	kv.savedErr = make(map[int64]Err)
 	kv.savedValue = make(map[int64]string)
@@ -218,10 +222,11 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.isLeader = false
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 
+	// You may need initialization code here.
 	kv.ApplySnapshot(persister.ReadSnapshot())
 	go kv.ReceiveApplyMsg()
 	go kv.DetectRaftState(persister)
-	// You may need initialization code here.
+
 	return kv
 }
 
@@ -261,7 +266,7 @@ func (kv *KVServer) SetSavedErr(op *Op, err Err) {
 	kv.savedErr[op.ClerkId] = err
 }
 
-func (kv *KVServer) SameOp(clerkId, term int) bool {
+func (kv *KVServer) SameOp(term int) bool {
 	return kv.appliedOpTerm == term
 }
 
@@ -305,7 +310,6 @@ func (kv *KVServer) DetectRaftState(persister *raft.Persister) {
 		if raftStateSize >= kv.maxraftstate {
 			kv.rf.SaveSnapshot(kv.MakeSnapshot())
 		}
-		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -337,7 +341,7 @@ func (kv *KVServer) ApplySnapshot(data []byte) {
 	var appliedOpTerm int
 	var appliedOpIndex int
 	if d.Decode(&Database) != nil || d.Decode(&SavedErr) != nil || d.Decode(&SavedValue) != nil || d.Decode(&ClerkMaxOpId) != nil || d.Decode(&appliedOpTerm) != nil || d.Decode(&appliedOpIndex) != nil {
-		DPrintf("[%v] snapshot Decode error", kv.me)
+		DPrintf("[%v] restore Snapshot error", kv.me)
 	} else {
 		kv.database = Database
 		kv.savedErr = SavedErr
@@ -345,7 +349,7 @@ func (kv *KVServer) ApplySnapshot(data []byte) {
 		kv.clerkMaxOpId = ClerkMaxOpId
 		kv.appliedOpTerm = appliedOpTerm
 		kv.appliedOpIndex = appliedOpIndex
-		DPrintf("[%v] restore from Snapshot success(appliedOpIndex:%v appliedOpTerm:%v)", kv.me, kv.appliedOpIndex, appliedOpTerm)
+		DPrintf("[%v] restore Snapshot success(appliedOpIndex:%v appliedOpTerm:%v)", kv.me, kv.appliedOpIndex, appliedOpTerm)
 	}
 }
 
