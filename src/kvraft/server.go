@@ -50,7 +50,12 @@ type KVServer struct {
 	clerkMaxOpId   map[int64]int
 	appliedOpTerm  int
 	appliedOpIndex int
-	isLeader       bool
+
+	cond1     *sync.Cond
+	cond2     *sync.Cond
+	nextFlag  bool
+	waitReply map[int]int
+	isLeader  bool
 }
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
@@ -75,39 +80,26 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	index, term, isLeader := kv.rf.Start(op)
 	reply.Err = ErrWrongLeader
 	if isLeader {
-		kv.mu.Lock()
-		kv.isLeader = true
-		kv.mu.Unlock()
-
-		waitCount := 0
-		waitLimit := 20
-		for !kv.killed() {
-			kv.mu.Lock()
-			if !kv.isLeader {
-				kv.mu.Unlock()
-				return
-			}
-
-			if kv.DuplicateOp(&op) {
-				if kv.SameOp(index, term) {
-					reply.Err = kv.GetSavedErr(&op)
-					if reply.Err != ErrNoKey {
-						reply.Value = kv.GetSavedValue(&op)
-					}
-				} else {
-					kv.isLeader = false
-				}
-				kv.mu.Unlock()
-				return
-			}
-			kv.mu.Unlock()
-
-			time.Sleep(10 * time.Millisecond)
-			waitCount++
-			if waitCount >= waitLimit {
-				return
-			}
+		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
+		kv.cond2.L.Lock()
+		kv.waitReply[index]++
+		for kv.appliedOpIndex < index && kv.isLeader {
+			kv.cond2.Wait()
 		}
+		if kv.isLeader && kv.SameOp(index, term) {
+			reply.Err = kv.GetSavedErr(&op)
+			if reply.Err != ErrNoKey {
+				reply.Value = kv.GetSavedValue(&op)
+			}
+			//DPrintf("Leader[%v] Get reply(%v)", kv.me, reply)
+		}
+		kv.waitReply[index]--
+		if kv.waitReply[index] == 0 {
+			delete(kv.waitReply, index)
+		}
+		kv.nextFlag = true
+		kv.cond2.L.Unlock()
+		kv.cond1.Broadcast()
 	}
 }
 
@@ -131,36 +123,23 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	index, term, isLeader := kv.rf.Start(op)
 	reply.Err = ErrWrongLeader
 	if isLeader {
-		kv.mu.Lock()
-		kv.isLeader = true
-		kv.mu.Unlock()
-
-		waitCount := 0
-		waitLimit := 20
-		for !kv.killed() {
-			kv.mu.Lock()
-			if !kv.isLeader {
-				kv.mu.Unlock()
-				return
-			}
-
-			if kv.DuplicateOp(&op) {
-				if kv.SameOp(index, term) {
-					reply.Err = kv.GetSavedErr(&op)
-				} else {
-					kv.isLeader = false
-				}
-				kv.mu.Unlock()
-				return
-			}
-			kv.mu.Unlock()
-
-			time.Sleep(10 * time.Millisecond)
-			waitCount++
-			if waitCount >= waitLimit {
-				return
-			}
+		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
+		kv.cond2.L.Lock()
+		kv.waitReply[index]++
+		for kv.appliedOpIndex < index && kv.isLeader {
+			kv.cond2.Wait()
 		}
+		if kv.isLeader && kv.SameOp(index, term) {
+			reply.Err = kv.GetSavedErr(&op)
+			//DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
+		}
+		kv.waitReply[index]--
+		if kv.waitReply[index] == 0 {
+			delete(kv.waitReply, index)
+		}
+		kv.nextFlag = true
+		kv.cond2.L.Unlock()
+		kv.cond1.Broadcast()
 	}
 }
 
@@ -209,16 +188,23 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.maxraftstate = maxraftstate
 
 	// You may need initialization code here.
-	kv.applyCh = make(chan raft.ApplyMsg)
+	kv.applyCh = make(chan raft.ApplyMsg, 1024)
+
 	kv.database = make(map[string]string)
 	kv.savedErr = make(map[int64]Err)
 	kv.savedValue = make(map[int64]string)
 	kv.clerkMaxOpId = make(map[int64]int)
-	kv.isLeader = false
+
+	kv.waitReply = make(map[int]int)
+	kv.cond1 = sync.NewCond(&kv.mu)
+	kv.cond2 = sync.NewCond(&kv.mu)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
-	go kv.ReceiveApplyMsg()
-	go kv.DetectRaftState(persister)
+
 	// You may need initialization code here.
+	kv.ApplySnapshot(persister.ReadSnapshot())
+	go kv.ReceiveApplyMsg()
+	go kv.DetectLeader()
+	go kv.DetectSize(persister)
 	return kv
 }
 
@@ -227,13 +213,26 @@ func (kv *KVServer) ReceiveApplyMsg() {
 		applyMsg := <-kv.applyCh
 		kv.mu.Lock()
 		kv.Apply(&applyMsg)
+		_, exist := kv.waitReply[kv.appliedOpIndex]
+		if exist {
+			kv.nextFlag = false
+			kv.cond2.Broadcast()
+		} else {
+			kv.nextFlag = true
+		}
 		kv.mu.Unlock()
+
+		kv.cond1.L.Lock()
+		for !kv.nextFlag {
+			kv.cond1.Wait()
+		}
+		kv.cond1.L.Unlock()
 	}
 }
 
 func (kv *KVServer) DuplicateOp(op *Op) bool {
 	maxOpId, exist := kv.clerkMaxOpId[op.ClerkId]
-	if exist && maxOpId >= op.OpId {
+	if exist && maxOpId == op.OpId {
 		return true
 	} else {
 		return false
@@ -258,15 +257,15 @@ func (kv *KVServer) SetSavedErr(op *Op, err Err) {
 	kv.savedErr[op.ClerkId] = err
 }
 
-func (kv *KVServer) SameOp(clerkId, term int) bool {
-	return kv.appliedOpTerm == term
+func (kv *KVServer) SameOp(index, term int) bool {
+	return kv.appliedOpIndex == index && kv.appliedOpTerm == term
 }
 
 func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
-	DPrintf("[%v] apply %v", kv.me, applyMsg.CommandIndex)
-	kv.appliedOpTerm = applyMsg.CommandTerm
-	kv.appliedOpIndex = applyMsg.CommandIndex
 	if applyMsg.CommandValid {
+		DPrintf("[%v] apply %v", kv.me, applyMsg.CommandIndex)
+		kv.appliedOpTerm = applyMsg.CommandTerm
+		kv.appliedOpIndex = applyMsg.CommandIndex
 		op := applyMsg.Command.(Op)
 		if kv.DuplicateOp(&op) {
 			return
@@ -288,33 +287,37 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 			kv.SetSavedErr(&op, OK)
 		}
 	} else {
-		kv.ReadSnapshot(applyMsg.Snapshot)
+		kv.ApplySnapshot(applyMsg.Snapshot)
 	}
 }
 
-func (kv *KVServer) DetectRaftState(persister *raft.Persister) {
+func (kv *KVServer) DetectLeader() {
+	for !kv.killed() {
+		kv.mu.Lock()
+		_, kv.isLeader = kv.rf.GetState()
+		if !kv.isLeader {
+			kv.cond2.Broadcast()
+		}
+		kv.mu.Unlock()
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+func (kv *KVServer) DetectSize(persister *raft.Persister) {
 	if kv.maxraftstate == -1 {
 		return
 	}
 	for !kv.killed() {
-		if persister.RaftStateSize() >= kv.maxraftstate {
-			kv.rf.Snapshot(kv.MakeSnapshot())
+		size := persister.RaftStateSize()
+		if size >= kv.maxraftstate {
+			kv.rf.SaveSnapshot(kv.MakeSnapshot())
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (kv *KVServer) MakeSnapshot() []byte {
+func (kv *KVServer) MakeSnapshot() (int, int, []byte) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	// Your code here (2C).
-	// Example:
-	// w := new(bytes.Buffer)
-	// e := labgob.NewEncoder(w)
-	// e.Encode(rf.xxx)
-	// e.Encode(rf.yyy)
-	// data := w.Bytes()
-	// rf.persister.SaveRaftState(data)
 	w := new(bytes.Buffer)
 	e := labgob.NewEncoder(w)
 	e.Encode(kv.database)
@@ -324,26 +327,13 @@ func (kv *KVServer) MakeSnapshot() []byte {
 	e.Encode(kv.appliedOpTerm)
 	e.Encode(kv.appliedOpIndex)
 	data := w.Bytes()
-	return data
+	return kv.appliedOpIndex, kv.appliedOpTerm, data
 }
 
-func (kv *KVServer) ReadSnapshot(data []byte) {
+func (kv *KVServer) ApplySnapshot(data []byte) {
 	if data == nil || len(data) < 1 { // bootstrap without any state?
 		return
 	}
-	// Your code here (2C).
-	// Example:
-	// r := bytes.NewBuffer(data)
-	// d := labgob.NewDecoder(r)
-	// var xxx
-	// var yyy
-	// if d.Decode(&xxx) != nil ||
-	//    d.Decode(&yyy) != nil {
-	//   error...
-	// } else {
-	//   rf.xxx = xxx
-	//   rf.yyy = yyy
-	// }
 	r := bytes.NewBuffer(data)
 	d := labgob.NewDecoder(r)
 	var Database map[string]string
@@ -353,7 +343,7 @@ func (kv *KVServer) ReadSnapshot(data []byte) {
 	var appliedOpTerm int
 	var appliedOpIndex int
 	if d.Decode(&Database) != nil || d.Decode(&SavedErr) != nil || d.Decode(&SavedValue) != nil || d.Decode(&ClerkMaxOpId) != nil || d.Decode(&appliedOpTerm) != nil || d.Decode(&appliedOpIndex) != nil {
-		DPrintf("[%v]Snapshot Decode error", kv.me)
+		DPrintf("[%v] restore Snapshot error", kv.me)
 	} else {
 		kv.database = Database
 		kv.savedErr = SavedErr
@@ -361,7 +351,7 @@ func (kv *KVServer) ReadSnapshot(data []byte) {
 		kv.clerkMaxOpId = ClerkMaxOpId
 		kv.appliedOpTerm = appliedOpTerm
 		kv.appliedOpIndex = appliedOpIndex
-		DPrintf("[%v]restore from Snapshot success", kv.me)
+		DPrintf("[%v] restore Snapshot success(appliedOpIndex:%v appliedOpTerm:%v)", kv.me, kv.appliedOpIndex, appliedOpTerm)
 	}
 }
 
