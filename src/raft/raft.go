@@ -92,7 +92,6 @@ type Raft struct {
 	applyCh       chan ApplyMsg
 	applyCond     *sync.Cond
 	//for better performance
-	reachable     []bool
 	electionTime  int
 	heartbeatTime int
 }
@@ -190,7 +189,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	reply.VoteGranted = false
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	rf.reachable[args.CandidateId] = true
 	if args.Term >= rf.currentTerm {
 		DPrintf("[%v] receive NEW RequestVote from [%v] at term %v", rf.me, args.CandidateId, args.Term)
 		if args.Term > rf.currentTerm {
@@ -303,7 +301,6 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	reply.Success = false
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	rf.reachable[args.LeaderId] = true
 	if args.Term >= rf.currentTerm {
 		DPrintf("[%v] receive NEW InstallSnapshot from [%v] at term %v(LastIncludedIndex:%v LastIncludedTerm:%v)", rf.me, args.LeaderId, args.Term, args.LastIncludedIndex, args.LastIncludedTerm)
 		if args.Term > rf.currentTerm {
@@ -465,7 +462,6 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	rf.lastHeardTime = time.Now()
 	rf.applyCond = sync.NewCond(&rf.mu)
-	rf.reachable = make([]bool, len(rf.peers))
 	rf.ConvertToFollower(0, false)
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
@@ -503,10 +499,10 @@ func (rf *Raft) ConvertToLeader() {
 		if idx != rf.me {
 			rf.nextIndex[idx] = lastLogIndex + 1
 			rf.matchIndex[idx] = rf.lastIncludedIndex
-			go rf.SendLog(idx, false)
 		}
 	}
-	go rf.AE()
+	go rf.Heartbeat()
+	go rf.Replication()
 }
 
 func (rf *Raft) ConvertToFollower(newTerm int, need bool) {
@@ -518,9 +514,8 @@ func (rf *Raft) ConvertToFollower(newTerm int, need bool) {
 	}
 }
 
-func (rf *Raft) AE() {
+func (rf *Raft) Heartbeat() {
 	for !rf.killed() {
-		time.Sleep(time.Duration(rf.heartbeatTime) * time.Millisecond)
 		rf.mu.Lock()
 		if rf.role != Leader {
 			rf.mu.Unlock()
@@ -528,19 +523,34 @@ func (rf *Raft) AE() {
 		}
 		for idx, _ := range rf.peers {
 			if idx != rf.me {
-				if rf.reachable[idx] && rf.GetLastIndex() >= rf.nextIndex[idx] {
-					rf.reachable[idx] = false
+				go rf.SendLog(idx, true)
+			}
+		}
+		rf.mu.Unlock()
+		time.Sleep(time.Duration(rf.heartbeatTime) * time.Millisecond)
+	}
+}
+
+func (rf *Raft) Replication() {
+	for !rf.killed() {
+		rf.mu.Lock()
+		if rf.role != Leader {
+			rf.mu.Unlock()
+			return
+		}
+		for idx, _ := range rf.peers {
+			if idx != rf.me {
+				if rf.GetLastIndex() >= rf.nextIndex[idx] {
 					if rf.Included(rf.nextIndex[idx]) {
 						go rf.SendLog(idx, false)
 					} else {
 						go rf.SendSnapshot(idx)
 					}
-				} else {
-					go rf.SendLog(idx, true)
 				}
 			}
 		}
 		rf.mu.Unlock()
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -570,18 +580,22 @@ func (rf *Raft) ElectionTimer() {
 }
 
 func (rf *Raft) ApplyChan() {
+	sendFlag := false
+	var msg ApplyMsg
 	for !rf.killed() {
 		rf.applyCond.L.Lock()
 		for rf.commitIndex <= rf.lastApplied {
 			rf.applyCond.Wait()
 		}
-		var applyMsgQueue []ApplyMsg
-		for rf.commitIndex > rf.lastApplied {
-			applyMsgQueue = append(applyMsgQueue, rf.MakeApplyMsg())
-			DPrintf("[%v] willApplied:%v lastIncludedIndex:%v lastLogIndex:%v", rf.me, rf.lastApplied, rf.lastIncludedIndex, rf.GetLastIndex())
+		if rf.Included(rf.lastApplied + 1) {
+			msg = rf.MakeApplyMsg()
+			sendFlag = true
+		} else {
+			sendFlag = false
 		}
+		DPrintf("[%v] willApplied:%v lastIncludedIndex:%v lastLogIndex:%v", rf.me, rf.lastApplied, rf.lastIncludedIndex, rf.GetLastIndex())
 		rf.applyCond.L.Unlock()
-		for _, msg := range applyMsgQueue {
+		if sendFlag {
 			rf.applyCh <- msg
 		}
 	}
@@ -610,7 +624,6 @@ func (rf *Raft) SendVote(server int, args *RequestVoteArgs) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	if ok {
-		rf.reachable[server] = true
 		if reply.Term > rf.currentTerm {
 			rf.ConvertToFollower(reply.Term, true)
 			return
@@ -622,8 +635,6 @@ func (rf *Raft) SendVote(server int, args *RequestVoteArgs) {
 				rf.ConvertToLeader()
 			}
 		}
-	} else {
-		rf.reachable[server] = false
 	}
 }
 
@@ -662,7 +673,6 @@ func (rf *Raft) SendLog(server int, heartbeat bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	if ok {
-		rf.reachable[server] = true
 		if reply.Term > rf.currentTerm {
 			rf.ConvertToFollower(reply.Term, true)
 			return
@@ -676,8 +686,6 @@ func (rf *Raft) SendLog(server int, heartbeat bool) {
 				rf.QuickRollBack(server, reply.XTerm, reply.XIndex, reply.XLen)
 			}
 		}
-	} else {
-		rf.reachable[server] = false
 	}
 }
 
@@ -701,7 +709,6 @@ func (rf *Raft) SendSnapshot(server int) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	if ok {
-		rf.reachable[server] = true
 		if reply.Term > rf.currentTerm {
 			rf.ConvertToFollower(reply.Term, true)
 			return
@@ -713,8 +720,6 @@ func (rf *Raft) SendSnapshot(server int) {
 				rf.MajorityCommit(rf.matchIndex[server])
 			}
 		}
-	} else {
-		rf.reachable[server] = false
 	}
 }
 

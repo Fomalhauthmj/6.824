@@ -34,8 +34,6 @@ type Op struct {
 	Value   string
 }
 
-const WaitLimit = 30
-
 type KVServer struct {
 	mu      sync.Mutex
 	me      int
@@ -53,7 +51,11 @@ type KVServer struct {
 	appliedOpTerm  int
 	appliedOpIndex int
 
-	isLeader bool
+	cond1     *sync.Cond
+	cond2     *sync.Cond
+	nextFlag  bool
+	waitReply map[int]int
+	isLeader  bool
 }
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
@@ -75,43 +77,29 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	}
 	kv.mu.Unlock()
 
-	_, term, isLeader := kv.rf.Start(op)
+	index, term, isLeader := kv.rf.Start(op)
 	reply.Err = ErrWrongLeader
 	if isLeader {
-		kv.mu.Lock()
-		kv.isLeader = true
-		DPrintf("Leader[%v] Get args(%v)", kv.me, args)
-		kv.mu.Unlock()
-
-		waitCount := 0
-		for !kv.killed() {
-			kv.mu.Lock()
-			if !kv.isLeader {
-				kv.mu.Unlock()
-				return
-			}
-
-			if kv.DuplicateOp(&op) {
-				if kv.SameOp(term) {
-					reply.Err = kv.GetSavedErr(&op)
-					if reply.Err != ErrNoKey {
-						reply.Value = kv.GetSavedValue(&op)
-					}
-					DPrintf("Leader[%v] Get reply(%v)", kv.me, reply)
-				} else {
-					kv.isLeader = false
-				}
-				kv.mu.Unlock()
-				return
-			}
-			kv.mu.Unlock()
-
-			time.Sleep(10 * time.Millisecond)
-			waitCount++
-			if waitCount >= WaitLimit {
-				return
-			}
+		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
+		kv.cond2.L.Lock()
+		kv.waitReply[index]++
+		for kv.appliedOpIndex < index && kv.isLeader {
+			kv.cond2.Wait()
 		}
+		if kv.isLeader && kv.SameOp(index, term) {
+			reply.Err = kv.GetSavedErr(&op)
+			if reply.Err != ErrNoKey {
+				reply.Value = kv.GetSavedValue(&op)
+			}
+			//DPrintf("Leader[%v] Get reply(%v)", kv.me, reply)
+		}
+		kv.waitReply[index]--
+		if kv.waitReply[index] == 0 {
+			delete(kv.waitReply, index)
+		}
+		kv.nextFlag = true
+		kv.cond2.L.Unlock()
+		kv.cond1.Broadcast()
 	}
 }
 
@@ -132,40 +120,26 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	}
 	kv.mu.Unlock()
 
-	_, term, isLeader := kv.rf.Start(op)
+	index, term, isLeader := kv.rf.Start(op)
 	reply.Err = ErrWrongLeader
 	if isLeader {
-		kv.mu.Lock()
-		kv.isLeader = true
-		DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
-		kv.mu.Unlock()
-
-		waitCount := 0
-		for !kv.killed() {
-			kv.mu.Lock()
-			if !kv.isLeader {
-				kv.mu.Unlock()
-				return
-			}
-
-			if kv.DuplicateOp(&op) {
-				if kv.SameOp(term) {
-					reply.Err = kv.GetSavedErr(&op)
-					DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
-				} else {
-					kv.isLeader = false
-				}
-				kv.mu.Unlock()
-				return
-			}
-			kv.mu.Unlock()
-
-			time.Sleep(10 * time.Millisecond)
-			waitCount++
-			if waitCount >= WaitLimit {
-				return
-			}
+		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
+		kv.cond2.L.Lock()
+		kv.waitReply[index]++
+		for kv.appliedOpIndex < index && kv.isLeader {
+			kv.cond2.Wait()
 		}
+		if kv.isLeader && kv.SameOp(index, term) {
+			reply.Err = kv.GetSavedErr(&op)
+			//DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
+		}
+		kv.waitReply[index]--
+		if kv.waitReply[index] == 0 {
+			delete(kv.waitReply, index)
+		}
+		kv.nextFlag = true
+		kv.cond2.L.Unlock()
+		kv.cond1.Broadcast()
 	}
 }
 
@@ -214,19 +188,23 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.maxraftstate = maxraftstate
 
 	// You may need initialization code here.
-	kv.applyCh = make(chan raft.ApplyMsg, 16)
+	kv.applyCh = make(chan raft.ApplyMsg, 1024)
+
 	kv.database = make(map[string]string)
 	kv.savedErr = make(map[int64]Err)
 	kv.savedValue = make(map[int64]string)
 	kv.clerkMaxOpId = make(map[int64]int)
-	kv.isLeader = false
+
+	kv.waitReply = make(map[int]int)
+	kv.cond1 = sync.NewCond(&kv.mu)
+	kv.cond2 = sync.NewCond(&kv.mu)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 
 	// You may need initialization code here.
 	kv.ApplySnapshot(persister.ReadSnapshot())
 	go kv.ReceiveApplyMsg()
-	go kv.DetectRaftState(persister)
-
+	go kv.DetectLeader()
+	go kv.DetectSize(persister)
 	return kv
 }
 
@@ -235,13 +213,26 @@ func (kv *KVServer) ReceiveApplyMsg() {
 		applyMsg := <-kv.applyCh
 		kv.mu.Lock()
 		kv.Apply(&applyMsg)
+		_, exist := kv.waitReply[kv.appliedOpIndex]
+		if exist {
+			kv.nextFlag = false
+			kv.cond2.Broadcast()
+		} else {
+			kv.nextFlag = true
+		}
 		kv.mu.Unlock()
+
+		kv.cond1.L.Lock()
+		for !kv.nextFlag {
+			kv.cond1.Wait()
+		}
+		kv.cond1.L.Unlock()
 	}
 }
 
 func (kv *KVServer) DuplicateOp(op *Op) bool {
 	maxOpId, exist := kv.clerkMaxOpId[op.ClerkId]
-	if exist && maxOpId >= op.OpId {
+	if exist && maxOpId == op.OpId {
 		return true
 	} else {
 		return false
@@ -266,8 +257,8 @@ func (kv *KVServer) SetSavedErr(op *Op, err Err) {
 	kv.savedErr[op.ClerkId] = err
 }
 
-func (kv *KVServer) SameOp(term int) bool {
-	return kv.appliedOpTerm == term
+func (kv *KVServer) SameOp(index, term int) bool {
+	return kv.appliedOpIndex == index && kv.appliedOpTerm == term
 }
 
 func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
@@ -296,20 +287,31 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 			kv.SetSavedErr(&op, OK)
 		}
 	} else {
-		DPrintf("[%v] receive snapshot", kv.me)
 		kv.ApplySnapshot(applyMsg.Snapshot)
 	}
 }
 
-func (kv *KVServer) DetectRaftState(persister *raft.Persister) {
+func (kv *KVServer) DetectLeader() {
+	for !kv.killed() {
+		kv.mu.Lock()
+		_, kv.isLeader = kv.rf.GetState()
+		if !kv.isLeader {
+			kv.cond2.Broadcast()
+		}
+		kv.mu.Unlock()
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+func (kv *KVServer) DetectSize(persister *raft.Persister) {
 	if kv.maxraftstate == -1 {
 		return
 	}
 	for !kv.killed() {
-		raftStateSize := persister.RaftStateSize()
-		if raftStateSize >= kv.maxraftstate {
+		size := persister.RaftStateSize()
+		if size >= kv.maxraftstate {
 			kv.rf.SaveSnapshot(kv.MakeSnapshot())
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

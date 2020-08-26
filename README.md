@@ -7,3 +7,4 @@
 | **Lab 2: Raft (Part 2B)**      | ![Lab 2B](https://github.com/Fomalhauthmj/6.824/workflows/Lab2B/badge.svg)        |
 | **Lab 2: Raft (Part 2C)**      | ![Lab 2C](https://github.com/Fomalhauthmj/6.824/workflows/Lab2C/badge.svg)        |
 | **Lab 3: KV Raft (Part 3A)**   | ![Lab 3A](https://github.com/Fomalhauthmj/6.824/workflows/Lab3A/badge.svg)        |
+| **Lab 3: KV Raft (Part 3B)**   | ![Lab 3B](https://github.com/Fomalhauthmj/6.824/workflows/Lab3B/badge.svg)        |
