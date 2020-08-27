@@ -315,7 +315,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 			rf.lastIncludedTerm = args.LastIncludedTerm
 		}
 		rf.lastApplied = args.LastIncludedIndex
-		rf.commitIndex = Max(args.LastIncludedIndex, rf.commitIndex)
+		rf.commitIndex = args.LastIncludedIndex
 		rf.persist()
 		applyMsg := ApplyMsg{
 			CommandValid: false,
@@ -452,7 +452,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	// Your initialization code here (2A, 2B, 2C).
 
 	rf.electionTime = 500
-	rf.heartbeatTime = 100
+	rf.heartbeatTime = 400
 
 	rf.commitIndex = 0
 	rf.lastApplied = 0
@@ -503,6 +503,7 @@ func (rf *Raft) ConvertToLeader() {
 	}
 	go rf.Heartbeat()
 	go rf.Replication()
+	go rf.MajorityCommit()
 }
 
 func (rf *Raft) ConvertToFollower(newTerm int, need bool) {
@@ -681,7 +682,6 @@ func (rf *Raft) SendLog(server int, heartbeat bool) {
 			if reply.Success {
 				rf.matchIndex[server] = args.PrevLogIndex + len(args.Entries)
 				rf.nextIndex[server] = rf.matchIndex[server] + 1
-				rf.MajorityCommit(rf.matchIndex[server])
 			} else if reply.XValid {
 				rf.QuickRollBack(server, reply.XTerm, reply.XIndex, reply.XLen)
 			}
@@ -717,7 +717,6 @@ func (rf *Raft) SendSnapshot(server int) {
 			if reply.Success {
 				rf.matchIndex[server] = rf.lastIncludedIndex
 				rf.nextIndex[server] = rf.lastIncludedIndex + 1
-				rf.MajorityCommit(rf.matchIndex[server])
 			}
 		}
 	}
@@ -775,21 +774,30 @@ func (rf *Raft) QuickRollBack(server, XTerm, XIndex, XLen int) {
 	}
 }
 
-func (rf *Raft) MajorityCommit(index int) {
-	if index <= rf.commitIndex || (rf.Included(index) && rf.GetLog(index).ReceivedTerm != rf.currentTerm) {
-		return
-	}
-	matchCount := 0
-	for idx, val := range rf.matchIndex {
-		if idx == rf.me || val >= index {
-			matchCount++
+func (rf *Raft) MajorityCommit() {
+	for !rf.killed() {
+		rf.mu.Lock()
+		if rf.role != Leader {
+			rf.mu.Unlock()
+			return
 		}
-	}
-	DPrintf("[%v] MajorityCommit: %v %v/%v", rf.me, index, matchCount, len(rf.peers))
-	if matchCount > len(rf.peers)/2 {
-		rf.commitIndex = index
-		DPrintf("Leader[%v] new commitIndex: %v", rf.me, rf.commitIndex)
-		rf.applyCond.Broadcast()
+		if rf.FindTerm(rf.currentTerm) {
+			index := Max(rf.FirstIndex(rf.currentTerm), rf.commitIndex+1)
+			matchCount := 0
+			for idx, val := range rf.matchIndex {
+				if idx == rf.me || val >= index {
+					matchCount++
+				}
+			}
+			DPrintf("[%v] MajorityCommit: %v %v/%v", rf.me, index, matchCount, len(rf.peers))
+			if matchCount > len(rf.peers)/2 {
+				rf.commitIndex = index
+				DPrintf("Leader[%v] new commitIndex: %v", rf.me, rf.commitIndex)
+				rf.applyCond.Broadcast()
+			}
+		}
+		rf.mu.Unlock()
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

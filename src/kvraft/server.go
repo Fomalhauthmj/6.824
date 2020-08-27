@@ -13,7 +13,7 @@ import (
 	"../raft"
 )
 
-const Debug = 0
+const Debug = 1
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	log.SetFlags(log.Lmicroseconds)
@@ -51,11 +51,11 @@ type KVServer struct {
 	appliedOpTerm  int
 	appliedOpIndex int
 
-	cond1     *sync.Cond
-	cond2     *sync.Cond
-	nextFlag  bool
-	waitReply map[int]int
-	isLeader  bool
+	cond1       *sync.Cond
+	cond2       *sync.Cond
+	nextFlag    bool
+	waitReply   map[int]int
+	currentTerm int
 }
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
@@ -83,10 +83,10 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
 		kv.cond2.L.Lock()
 		kv.waitReply[index]++
-		for kv.appliedOpIndex < index && kv.isLeader {
+		for kv.appliedOpIndex < index && term == kv.currentTerm {
 			kv.cond2.Wait()
 		}
-		if kv.isLeader && kv.SameOp(index, term) {
+		if term == kv.currentTerm && kv.SameOp(index, term) {
 			reply.Err = kv.GetSavedErr(&op)
 			if reply.Err != ErrNoKey {
 				reply.Value = kv.GetSavedValue(&op)
@@ -126,10 +126,10 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
 		kv.cond2.L.Lock()
 		kv.waitReply[index]++
-		for kv.appliedOpIndex < index && kv.isLeader {
+		for kv.appliedOpIndex < index && term == kv.currentTerm {
 			kv.cond2.Wait()
 		}
-		if kv.isLeader && kv.SameOp(index, term) {
+		if term == kv.currentTerm && kv.SameOp(index, term) {
 			reply.Err = kv.GetSavedErr(&op)
 			//DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
 		}
@@ -199,11 +199,10 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.cond1 = sync.NewCond(&kv.mu)
 	kv.cond2 = sync.NewCond(&kv.mu)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
-
 	// You may need initialization code here.
 	kv.ApplySnapshot(persister.ReadSnapshot())
 	go kv.ReceiveApplyMsg()
-	go kv.DetectLeader()
+	go kv.DetectTerm()
 	go kv.DetectSize(persister)
 	return kv
 }
@@ -291,13 +290,11 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 	}
 }
 
-func (kv *KVServer) DetectLeader() {
+func (kv *KVServer) DetectTerm() {
 	for !kv.killed() {
 		kv.mu.Lock()
-		_, kv.isLeader = kv.rf.GetState()
-		if !kv.isLeader {
-			kv.cond2.Broadcast()
-		}
+		kv.currentTerm, _ = kv.rf.GetState()
+		kv.cond2.Broadcast()
 		kv.mu.Unlock()
 		time.Sleep(100 * time.Millisecond)
 	}
