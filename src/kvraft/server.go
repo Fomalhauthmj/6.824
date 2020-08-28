@@ -51,9 +51,8 @@ type KVServer struct {
 	appliedOpTerm  int
 	appliedOpIndex int
 
-	cond1       *sync.Cond
-	cond2       *sync.Cond
-	nextFlag    bool
+	receiveCond *sync.Cond
+	replyCond   *sync.Cond
 	waitReply   map[int]int
 	currentTerm int
 }
@@ -81,25 +80,26 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	reply.Err = ErrWrongLeader
 	if isLeader {
 		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
-		kv.cond2.L.Lock()
+		kv.replyCond.L.Lock()
 		kv.waitReply[index]++
 		for kv.appliedOpIndex < index && term == kv.currentTerm {
-			kv.cond2.Wait()
+			kv.replyCond.Wait()
 		}
-		if term == kv.currentTerm && kv.SameOp(index, term) {
-			reply.Err = kv.GetSavedErr(&op)
-			if reply.Err != ErrNoKey {
-				reply.Value = kv.GetSavedValue(&op)
+		if term == kv.currentTerm { //leader not changed
+			if kv.SameOp(index, term) {
+				reply.Err = kv.GetSavedErr(&op)
+				if reply.Err != ErrNoKey {
+					reply.Value = kv.GetSavedValue(&op)
+				}
+				//DPrintf("Leader[%v] Get reply(%v)", kv.me, reply)
 			}
-			//DPrintf("Leader[%v] Get reply(%v)", kv.me, reply)
 		}
 		kv.waitReply[index]--
 		if kv.waitReply[index] == 0 {
 			delete(kv.waitReply, index)
 		}
-		kv.nextFlag = true
-		kv.cond2.L.Unlock()
-		kv.cond1.Broadcast()
+		kv.replyCond.L.Unlock()
+		kv.receiveCond.Broadcast()
 	}
 }
 
@@ -124,22 +124,23 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	reply.Err = ErrWrongLeader
 	if isLeader {
 		//DPrintf("Leader[%v] PutAppend args(%v)", kv.me, args)
-		kv.cond2.L.Lock()
+		kv.replyCond.L.Lock()
 		kv.waitReply[index]++
 		for kv.appliedOpIndex < index && term == kv.currentTerm {
-			kv.cond2.Wait()
+			kv.replyCond.Wait()
 		}
-		if term == kv.currentTerm && kv.SameOp(index, term) {
-			reply.Err = kv.GetSavedErr(&op)
-			//DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
+		if term == kv.currentTerm {
+			if kv.SameOp(index, term) {
+				reply.Err = kv.GetSavedErr(&op)
+				//DPrintf("Leader[%v] PutAppend reply(%v)", kv.me, reply)
+			}
 		}
 		kv.waitReply[index]--
 		if kv.waitReply[index] == 0 {
 			delete(kv.waitReply, index)
 		}
-		kv.nextFlag = true
-		kv.cond2.L.Unlock()
-		kv.cond1.Broadcast()
+		kv.replyCond.L.Unlock()
+		kv.receiveCond.Broadcast()
 	}
 }
 
@@ -196,8 +197,8 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	kv.clerkMaxOpId = make(map[int64]int)
 
 	kv.waitReply = make(map[int]int)
-	kv.cond1 = sync.NewCond(&kv.mu)
-	kv.cond2 = sync.NewCond(&kv.mu)
+	kv.receiveCond = sync.NewCond(&kv.mu)
+	kv.replyCond = sync.NewCond(&kv.mu)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 	// You may need initialization code here.
 	kv.ApplySnapshot(persister.ReadSnapshot())
@@ -212,20 +213,48 @@ func (kv *KVServer) ReceiveApplyMsg() {
 		applyMsg := <-kv.applyCh
 		kv.mu.Lock()
 		kv.Apply(&applyMsg)
-		_, exist := kv.waitReply[kv.appliedOpIndex]
-		if exist {
-			kv.nextFlag = false
-			kv.cond2.Broadcast()
-		} else {
-			kv.nextFlag = true
+		if kv.NeedReply() {
+			kv.replyCond.Broadcast()
 		}
 		kv.mu.Unlock()
 
-		kv.cond1.L.Lock()
-		for !kv.nextFlag {
-			kv.cond1.Wait()
+		kv.receiveCond.L.Lock()
+		for kv.NeedReply() {
+			kv.receiveCond.Wait()
 		}
-		kv.cond1.L.Unlock()
+		kv.receiveCond.L.Unlock()
+	}
+}
+
+func (kv *KVServer) DetectTerm() {
+	for !kv.killed() {
+		kv.mu.Lock()
+		kv.currentTerm, _ = kv.rf.GetState()
+		kv.replyCond.Broadcast()
+		kv.mu.Unlock()
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func (kv *KVServer) DetectSize(persister *raft.Persister) {
+	if kv.maxraftstate == -1 {
+		return
+	}
+	for !kv.killed() {
+		size := persister.RaftStateSize()
+		if size >= kv.maxraftstate {
+			kv.rf.SaveSnapshot(kv.MakeSnapshot())
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func (kv *KVServer) NeedReply() bool {
+	value, exist := kv.waitReply[kv.appliedOpIndex]
+	if exist && value > 0 {
+		return true
+	} else {
+		return false
 	}
 }
 
@@ -287,28 +316,6 @@ func (kv *KVServer) Apply(applyMsg *raft.ApplyMsg) {
 		}
 	} else {
 		kv.ApplySnapshot(applyMsg.Snapshot)
-	}
-}
-
-func (kv *KVServer) DetectTerm() {
-	for !kv.killed() {
-		kv.mu.Lock()
-		kv.currentTerm, _ = kv.rf.GetState()
-		kv.cond2.Broadcast()
-		kv.mu.Unlock()
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-func (kv *KVServer) DetectSize(persister *raft.Persister) {
-	if kv.maxraftstate == -1 {
-		return
-	}
-	for !kv.killed() {
-		size := persister.RaftStateSize()
-		if size >= kv.maxraftstate {
-			kv.rf.SaveSnapshot(kv.MakeSnapshot())
-		}
-		time.Sleep(100 * time.Millisecond)
 	}
 }
 
